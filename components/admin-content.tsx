@@ -1,0 +1,274 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { AdminTab } from "./admin-sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Trash2, Shield, UserIcon, Plus } from "lucide-react";
+
+interface User {
+  id: string;
+  username: string;
+  role: string;
+  createdAt: Date;
+}
+
+interface AdminContentProps {
+  activeTab: AdminTab;
+  users: User[];
+  currentUserId: string;
+  isLoading: boolean;
+  setDeleteUserId: (id: string | null) => void;
+  setToggleRoleUserId: (id: string | null) => void;
+}
+
+function UserManagementTab({
+  users,
+  currentUserId,
+  isLoading,
+  setDeleteUserId,
+  setToggleRoleUserId,
+}: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-border shadow-lg">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">User Management</CardTitle>
+              <CardDescription className="mt-2">
+                View and manage all registered users and their permissions.
+              </CardDescription>
+            </div>
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              {users.length} Users
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="rounded-lg border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="font-semibold">Username</TableHead>
+                  <TableHead className="font-semibold">Role</TableHead>
+                  <TableHead className="font-semibold">Joined</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: User, index: number) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="border-b border-border hover:bg-muted/20 transition-colors"
+                  >
+                    <TableCell className="font-medium">
+                      {user.username}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.role === "ADMIN" ? "default" : "secondary"
+                        }
+                        className="gap-1"
+                      >
+                        {user.role === "ADMIN" ? (
+                          <Shield className="w-3 h-3" />
+                        ) : (
+                          <UserIcon className="w-3 h-3" />
+                        )}
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(user.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setToggleRoleUserId(user.id)}
+                        disabled={user.id === currentUserId || isLoading}
+                        className="border-border hover:bg-accent"
+                      >
+                        Toggle Role
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteUserId(user.id)}
+                        disabled={user.id === currentUserId || isLoading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function TeamsManagementTab() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-border shadow-lg">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">Team Management</CardTitle>
+              <CardDescription className="mt-2">
+                Create, edit, and remove team rosters for competitions.
+              </CardDescription>
+            </div>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create Team
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-2">No teams yet</p>
+            <p className="text-sm">Create your first team to get started</p>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function PlayersManagementTab() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-border shadow-lg">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">Player Management</CardTitle>
+              <CardDescription className="mt-2">
+                Add, remove, and assign players to teams and manage their
+                profiles.
+              </CardDescription>
+            </div>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Player
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-2">No players yet</p>
+            <p className="text-sm">Add your first player to get started</p>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function GamesManagementTab() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-border shadow-lg">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">Game Management</CardTitle>
+              <CardDescription className="mt-2">
+                Add and remove supported esports titles for your platform.
+              </CardDescription>
+            </div>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Game
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-2">No games yet</p>
+            <p className="text-sm">
+              Add your first supported game to get started
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+export function AdminContent({
+  activeTab,
+  users,
+  currentUserId,
+  isLoading,
+  setDeleteUserId,
+  setToggleRoleUserId,
+}: AdminContentProps) {
+  switch (activeTab) {
+    case "Users":
+      return (
+        <UserManagementTab
+          users={users}
+          currentUserId={currentUserId}
+          isLoading={isLoading}
+          setDeleteUserId={setDeleteUserId}
+          setToggleRoleUserId={setToggleRoleUserId}
+        />
+      );
+    case "Teams":
+      return <TeamsManagementTab />;
+    case "Players":
+      return <PlayersManagementTab />;
+    case "Games":
+      return <GamesManagementTab />;
+    default:
+      return null;
+  }
+}

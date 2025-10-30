@@ -1,11 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,177 +12,166 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Trash2, Shield, UserIcon } from "lucide-react"
-import { Navbar } from "./navbar"
+} from "@/components/ui/alert-dialog";
+import { AdminSidebar, AdminTab } from "./admin-sidebar";
+import { AdminContent } from "./admin-content";
 
 interface User {
-  id: string
-  username: string
-  role: string
-  createdAt: Date
+  id: string;
+  username: string;
+  role: string;
+  createdAt: Date;
 }
 
 interface AdminDashboardProps {
-  users: User[]
-  currentUserId: string
+  users: User[];
+  currentUserId: string;
 }
 
 export function AdminDashboard({ users, currentUserId }: AdminDashboardProps) {
-  const router = useRouter()
-  const [deleteUserId, setDeleteUserId] = useState<string | null>(null)
-  const [toggleRoleUserId, setToggleRoleUserId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<AdminTab>("Users");
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [toggleRoleUserId, setToggleRoleUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDeleteUser = async () => {
-    if (!deleteUserId) return
+    if (!deleteUserId) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/admin/users/${deleteUserId}`, {
         method: "DELETE",
-      })
+      });
 
       if (response.ok) {
-        router.refresh()
-        setDeleteUserId(null)
+        router.refresh();
+        setDeleteUserId(null);
       } else {
-        alert("Failed to delete user")
+        alert("Failed to delete user");
       }
     } catch (error) {
-      console.error("[v0] Delete user error:", error)
-      alert("An error occurred")
+      console.error("Delete user error:", error);
+      alert("An error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleToggleRole = async () => {
-    if (!toggleRoleUserId) return
+    if (!toggleRoleUserId) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/users/${toggleRoleUserId}/role`, {
-        method: "PATCH",
-      })
+      const response = await fetch(
+        `/api/admin/users/${toggleRoleUserId}/role`,
+        {
+          method: "PATCH",
+        }
+      );
 
       if (response.ok) {
-        router.refresh()
-        setToggleRoleUserId(null)
+        router.refresh();
+        setToggleRoleUserId(null);
       } else {
-        alert("Failed to update user role")
+        alert("Failed to update user role");
       }
     } catch (error) {
-      console.error("[v0] Toggle role error:", error)
-      alert("An error occurred")
+      console.error("Toggle role error:", error);
+      alert("An error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <>
-      <Navbar />
-      <div className="min-h-screen bg-background pt-24 pb-12 px-4">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage users and their roles</p>
-          </div>
+      <div className="min-h-screen bg-background">
+        <div className="pt-16">
+          <div className="flex">
+            <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>View and manage all registered users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-primary/20">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
-                            {user.role === "ADMIN" ? (
-                              <Shield className="w-3 h-3 mr-1" />
-                            ) : (
-                              <UserIcon className="w-3 h-3 mr-1" />
-                            )}
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setToggleRoleUserId(user.id)}
-                            disabled={user.id === currentUserId}
-                            className="border-primary/20 hover:bg-primary/10"
-                          >
-                            Toggle Role
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setDeleteUserId(user.id)}
-                            disabled={user.id === currentUserId}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+            <main className="flex-1 p-8 md:ml-0 overflow-x-hidden">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-8"
+              >
+                <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Admin Dashboard
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                  Manage your platform content, users, and settings.
+                </p>
+              </motion.div>
+
+              <AdminContent
+                activeTab={activeTab}
+                users={users}
+                currentUserId={currentUserId}
+                isLoading={isLoading}
+                setDeleteUserId={setDeleteUserId}
+                setToggleRoleUserId={setToggleRoleUserId}
+              />
+            </main>
+          </div>
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+      <AlertDialog
+        open={!!deleteUserId}
+        onOpenChange={() => setDeleteUserId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user account.
+              This action cannot be undone. This will permanently delete the
+              user account and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} disabled={isLoading}>
-              {isLoading ? "Deleting..." : "Delete"}
+              {isLoading ? "Deleting..." : "Delete User"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Toggle Role Confirmation Dialog */}
-      <AlertDialog open={!!toggleRoleUserId} onOpenChange={() => setToggleRoleUserId(null)}>
+      <AlertDialog
+        open={!!toggleRoleUserId}
+        onOpenChange={() => setToggleRoleUserId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Toggle User Role</AlertDialogTitle>
-            <AlertDialogDescription>This will change the user's role between USER and ADMIN.</AlertDialogDescription>
+            <AlertDialogDescription>
+              This will change the user's role between USER and ADMIN.
+              {toggleRoleUserId &&
+                users.find((u) => u.id === toggleRoleUserId) && (
+                  <span className="block mt-3 p-3 bg-muted rounded-md">
+                    Current role for{" "}
+                    <strong>
+                      {users.find((u) => u.id === toggleRoleUserId)?.username}
+                    </strong>
+                    :{" "}
+                    <strong>
+                      {users.find((u) => u.id === toggleRoleUserId)?.role}
+                    </strong>
+                  </span>
+                )}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleToggleRole} disabled={isLoading}>
-              {isLoading ? "Updating..." : "Confirm"}
+              {isLoading ? "Updating..." : "Confirm Change"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

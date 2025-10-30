@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
 
-import Link from "next/link"
-import { useState } from "react"
-import { Menu, X, LogOut, User, Shield } from "lucide-react"
-import Image from "next/image"
-import { Facebook, Instagram } from "lucide-react"
-import { SiDiscord } from "react-icons/si"
-import { useSession, signOut } from "next-auth/react"
-import { Button } from "@/components/ui/button"
+import Link from "next/link";
+import { useState } from "react";
+import { Menu, X, LogOut, User, Shield } from "lucide-react";
+import Image from "next/image";
+import { Facebook, Instagram } from "lucide-react";
+import { SiDiscord } from "react-icons/si";
+import { useSession, signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +17,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
-  const [isOpen, setIsOpen] = useState(false)
-  const { data: session, status } = useSession()
+  const [isOpen, setIsOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   const games = [
     { name: "League of Legends", slug: "league-of-legends" },
@@ -30,15 +30,24 @@ export function Navbar() {
     { name: "Rocket League", slug: "rocket-league" },
     { name: "Overwatch 2", slug: "overwatch-2" },
     { name: "Apex Legends", slug: "apex-legends" },
-  ]
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/#" scroll={true} className="flex items-center gap-3 group">
+          <Link
+            href="/#"
+            scroll={true}
+            className="flex items-center gap-3 group"
+          >
             <div className="relative w-10 h-10 transition-transform group-hover:scale-110">
-              <Image src="/ccc-esports-logo.png" alt="CCC Esports Logo" fill className="object-contain" />
+              <Image
+                src="/ccc-esports-logo.png"
+                alt="CCC Esports Logo"
+                fill
+                className="object-contain"
+              />
             </div>
             <span className="text-xl font-black uppercase tracking-tight hidden sm:block">
               <span className="text-primary">CCC</span> Esports
@@ -47,11 +56,16 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-sm font-semibold hover:text-primary transition-colors">
+            <Link
+              href="/"
+              className="text-sm font-semibold hover:text-primary transition-colors"
+            >
               Home
             </Link>
             <div className="relative group">
-              <button className="text-sm font-semibold hover:text-primary transition-colors">Teams</button>
+              <button className="text-sm font-semibold hover:text-primary transition-colors">
+                Teams
+              </button>
               <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-primary/20 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 {games.map((game) => (
                   <Link
@@ -64,14 +78,23 @@ export function Navbar() {
                 ))}
               </div>
             </div>
-            <Link href="/#about" className="text-sm font-semibold hover:text-primary transition-colors">
+            <Link
+              href="/#about"
+              className="text-sm font-semibold hover:text-primary transition-colors"
+            >
               About
             </Link>
-            <Link href="/sponsors" className="text-sm font-semibold hover:text-primary transition-colors">
+            <Link
+              href="/sponsors"
+              className="text-sm font-semibold hover:text-primary transition-colors"
+            >
               Sponsors
             </Link>
             {session?.user?.role === "ADMIN" && (
-              <Link href="/admin" className="text-sm font-semibold hover:text-primary transition-colors">
+              <Link
+                href="/admin"
+                className="text-sm font-semibold hover:text-primary transition-colors"
+              >
                 Admin
               </Link>
             )}
@@ -118,15 +141,22 @@ export function Navbar() {
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>
                     <div className="flex flex-col">
-                      <span className="font-semibold">{session.user.username}</span>
+                      <span className="font-semibold">
+                        {session.user.username}
+                      </span>
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        {session.user.role === "ADMIN" && <Shield className="w-3 h-3" />}
+                        {session.user.role === "ADMIN" && (
+                          <Shield className="w-3 h-3" />
+                        )}
                         {session.user.role}
                       </span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => signOut()}
+                    className="cursor-pointer"
+                  >
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>
@@ -134,7 +164,11 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <Link href="/auth/signin">
-                <Button variant="outline" size="sm" className="border-primary/20 hover:bg-primary/10 bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-primary/20 hover:bg-primary/40  hover:text-white bg-transparent h"
+                >
                   Sign In
                 </Button>
               </Link>
@@ -162,7 +196,9 @@ export function Navbar() {
                 Home
               </Link>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-muted-foreground">Teams</p>
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Teams
+                </p>
                 {games.map((game) => (
                   <Link
                     key={game.slug}
@@ -212,8 +248,8 @@ export function Navbar() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      signOut()
-                      setIsOpen(false)
+                      signOut();
+                      setIsOpen(false);
                     }}
                     className="w-full border-primary/20"
                   >
@@ -223,7 +259,11 @@ export function Navbar() {
                 </div>
               ) : (
                 <Link href="/auth/signin" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full border-primary/20 bg-transparent">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-primary/20 bg-transparent text-sm font-semibold hover:text-primary transition-colors"
+                  >
                     Sign In
                   </Button>
                 </Link>
@@ -263,5 +303,5 @@ export function Navbar() {
         )}
       </div>
     </nav>
-  )
+  );
 }
