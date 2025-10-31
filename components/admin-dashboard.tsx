@@ -65,9 +65,7 @@ export function AdminDashboard({ users, currentUserId }: AdminDashboardProps) {
     try {
       const response = await fetch(
         `/api/admin/users/${toggleRoleUserId}/role`,
-        {
-          method: "PATCH",
-        }
+        { method: "PATCH" }
       );
 
       if (response.ok) {
@@ -119,6 +117,7 @@ export function AdminDashboard({ users, currentUserId }: AdminDashboardProps) {
         </div>
       </div>
 
+      {/* Delete User Dialog */}
       <AlertDialog
         open={!!deleteUserId}
         onOpenChange={() => setDeleteUserId(null)}
@@ -140,6 +139,7 @@ export function AdminDashboard({ users, currentUserId }: AdminDashboardProps) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Toggle Role Dialog */}
       <AlertDialog
         open={!!toggleRoleUserId}
         onOpenChange={() => setToggleRoleUserId(null)}
