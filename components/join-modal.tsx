@@ -1,17 +1,23 @@
-"use client"
+"use client";
 
-import type React from "react"
+import { useState } from "react";
+import { toast } from "sonner";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface JoinModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function JoinModal({ open, onOpenChange }: JoinModalProps) {
@@ -22,16 +28,44 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
     phone: "",
     email: "",
     over18: "",
-  })
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Form submitted:", formData)
-    // Handle form submission here
-    onOpenChange(false)
-    // Reset form
-    setFormData({ firstName: "", lastName: "", discord: "", phone: "", email: "", over18: "" })
-  }
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        toast.error(result.message || "Failed to submit application.");
+      } else {
+        toast.success("✅ Application submitted successfully!");
+        onOpenChange(false);
+        setFormData({
+          firstName: "",
+          lastName: "",
+          discord: "",
+          phone: "",
+          email: "",
+          over18: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("❌ An error occurred while submitting the application.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,7 +82,10 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-foreground font-semibold text-sm">
+              <Label
+                htmlFor="firstName"
+                className="text-foreground font-semibold text-sm"
+              >
                 First Name *
               </Label>
               <Input
@@ -57,13 +94,18 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
                 placeholder="John"
                 required
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
                 className="bg-background/50 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-foreground font-semibold text-sm">
+              <Label
+                htmlFor="lastName"
+                className="text-foreground font-semibold text-sm"
+              >
                 Last Name *
               </Label>
               <Input
@@ -72,14 +114,19 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
                 placeholder="Doe"
                 required
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
                 className="bg-background/50 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground font-semibold text-sm">
+            <Label
+              htmlFor="email"
+              className="text-foreground font-semibold text-sm"
+            >
               Email Address *
             </Label>
             <Input
@@ -88,13 +135,18 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
               placeholder="john.doe@college.edu"
               required
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               className="bg-background/50 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="discord" className="text-foreground font-semibold text-sm">
+            <Label
+              htmlFor="discord"
+              className="text-foreground font-semibold text-sm"
+            >
               Discord Name/Handle *
             </Label>
             <Input
@@ -103,13 +155,18 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
               placeholder="username#0000 or @username"
               required
               value={formData.discord}
-              onChange={(e) => setFormData({ ...formData, discord: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, discord: e.target.value })
+              }
               className="bg-background/50 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-foreground font-semibold text-sm">
+            <Label
+              htmlFor="phone"
+              className="text-foreground font-semibold text-sm"
+            >
               Phone Number *
             </Label>
             <Input
@@ -118,28 +175,48 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
               placeholder="(555) 123-4567"
               required
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               className="bg-background/50 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
           <div className="space-y-3 pt-2">
-            <Label className="text-foreground font-semibold text-sm">Are you over the age of 18? *</Label>
+            <Label className="text-foreground font-semibold text-sm">
+              Are you over the age of 18? *
+            </Label>
             <RadioGroup
               required
               value={formData.over18}
-              onValueChange={(value) => setFormData({ ...formData, over18: value })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, over18: value })
+              }
               className="flex gap-6"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="yes" className="border-primary/50 text-primary" />
-                <Label htmlFor="yes" className="text-foreground cursor-pointer font-medium">
+                <RadioGroupItem
+                  value="yes"
+                  id="yes"
+                  className="border-primary/50 text-primary"
+                />
+                <Label
+                  htmlFor="yes"
+                  className="text-foreground cursor-pointer font-medium"
+                >
                   Yes
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="no" className="border-primary/50 text-primary" />
-                <Label htmlFor="no" className="text-foreground cursor-pointer font-medium">
+                <RadioGroupItem
+                  value="no"
+                  id="no"
+                  className="border-primary/50 text-primary"
+                />
+                <Label
+                  htmlFor="no"
+                  className="text-foreground cursor-pointer font-medium"
+                >
                   No
                 </Label>
               </div>
@@ -149,9 +226,10 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
           <div className="flex gap-3 pt-6">
             <Button
               type="submit"
+              disabled={loading}
               className="flex-1 font-bold uppercase tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
             >
-              Submit Application
+              {loading ? "Submitting..." : "Submit Application"}
             </Button>
             <Button
               type="button"
@@ -165,5 +243,5 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

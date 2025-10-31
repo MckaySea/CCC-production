@@ -130,7 +130,7 @@ export function Navbar() {
             </div>
 
             {status === "loading" ? (
-              <div className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-secondary border:text-primary animate-pulse" />
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
