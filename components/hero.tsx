@@ -1,24 +1,27 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Trophy, Gamepad2 } from "lucide-react"
-import { JoinModal } from "./join-modal"
-import Link from "next/link"
-import Image from "next/image"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Gamepad2 } from "lucide-react";
+import { JoinModal } from "./join-modal";
+import Link from "next/link";
+import Image from "next/image";
 
 export function Hero() {
-  const [joinModalOpen, setJoinModalOpen] = useState(false)
-
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   return (
     <>
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20">
         {/* Background image with overlay */}
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/esports-gaming-arena-with-dramatic-lighting.jpg"
             alt="Esports Arena"
-            className="w-full h-full object-cover opacity-40"
+            fill
+            priority // Use 'priority' since it's above the fold
+            className="object-cover opacity-40"
+            sizes="100vw" // Helps Next.js calculate best image size
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         </div>
@@ -26,20 +29,29 @@ export function Hero() {
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <div className="mb-6 flex justify-center">
-            <div className="relative w-32 h-32 md:w-40 md:h-40 animate-in fade-in zoom-in duration-700">
+            <div
+              className={`relative w-32 h-32 md:w-40 md:h-40 transition-opacity duration-700 ${
+                isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
+              }`}
+              style={{ transitionProperty: "opacity, transform" }}
+            >
               <Image
                 src="/ccc-esports-logo.png"
                 alt="CCC Esports Logo"
                 fill
-                className="object-contain drop-shadow-[0_0_30px_rgba(34,197,94,0.3)]"
                 priority
+                className="object-contain drop-shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+                // Key change: Set state when the image is fully loaded
+                onLoadingComplete={() => setIsLoaded(true)}
               />
             </div>
           </div>
 
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <Trophy className="w-4 h-4 text-primary" />
-            <span className="text-sm font-mono text-primary uppercase tracking-wider">Collegiate Esports</span>
+            <span className="text-sm font-mono text-primary uppercase tracking-wider">
+              Collegiate Esports
+            </span>
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase mb-4 text-balance">
@@ -49,7 +61,8 @@ export function Hero() {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 leading-relaxed">
-            Join our competitive gaming community and represent your college in the biggest esports titles
+            Join our competitive gaming community and represent your college in
+            the biggest esports titles
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -79,5 +92,5 @@ export function Hero() {
 
       <JoinModal open={joinModalOpen} onOpenChange={setJoinModalOpen} />
     </>
-  )
+  );
 }
