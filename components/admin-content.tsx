@@ -21,14 +21,31 @@ import {
 } from "@/components/ui/table";
 import {
   Trash2,
-  Shield,
-  UserIcon,
-  Plus,
   Loader2,
   Mail,
+  Plus,
+  Gamepad2,
+  Users2,
   Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 interface User {
   id: string;
@@ -48,6 +65,19 @@ interface Applicant {
   created_at: string;
 }
 
+interface Team {
+  id: string;
+  name: string;
+  users?: User[];
+}
+
+interface Game {
+  id: string;
+  name: string;
+  max_players_per_team: number;
+  teams: Team[];
+}
+
 interface AdminContentProps {
   activeTab: AdminTab;
   users: User[];
@@ -57,20 +87,17 @@ interface AdminContentProps {
   setToggleRoleUserId: (id: string | null) => void;
 }
 
-// Helper component for loading state
-const LoadingIndicator = () => (
+const LoadingIndicator = ({ text = "Loading..." }: { text?: string }) => (
   <div className="flex justify-center items-center py-16 text-primary">
     <Loader2 className="w-8 h-8 animate-spin mr-2" />
-    <p className="text-lg">Loading applicants...</p>
+    <p className="text-lg">{text}</p>
   </div>
 );
 
-// Helper component for error state
 const ErrorIndicator = ({ message }: { message: string }) => (
   <div className="text-center py-16 text-destructive">
     <p className="text-xl font-semibold mb-2">Error Loading Data</p>
     <p className="text-sm">{message}</p>
-    <p className="text-sm mt-4">Please check the server logs.</p>
   </div>
 );
 
@@ -80,162 +107,371 @@ function ApplicantsManagementTab() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Function to fetch applicants data from the new API route
     const fetchApplicants = async () => {
       setIsLoading(true);
-      setError(null);
       try {
-        const response = await fetch("/api/join"); // Fetch from the new GET endpoint
+        const response = await fetch("/api/join");
         const result = await response.json();
-
         if (response.ok && result.success) {
           setApplicants(result.data);
         } else {
-          // Handle API error messages
-          throw new Error(result.message || "Failed to fetch applicants data.");
+          throw new Error(result.message || "Failed to fetch applicants.");
         }
       } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-          console.error("Fetch Applicants Error:", err.message);
-        } else {
-          setError("An unknown error occurred.");
-          console.error("Fetch Applicants Error:", err);
-        }
+        setError(
+          err instanceof Error ? err.message : "Unknown error occurred."
+        );
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchApplicants();
   }, []);
 
+  if (isLoading) return <LoadingIndicator text="Loading applicants..." />;
+  if (error) return <ErrorIndicator message={error} />;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="border-border shadow-lg">
         <CardHeader className="border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Users className="w-6 h-6" /> Applicant Queue
-              </CardTitle>
-              <CardDescription className="mt-2">
-                Review and process all incoming user applications.
-              </CardDescription>
-            </div>
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {applicants.length} Applications
-            </Badge>
-          </div>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            <Users className="w-6 h-6" /> Applicant Queue
+          </CardTitle>
+          <CardDescription>
+            Review and process all incoming user applications.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          {isLoading && <LoadingIndicator />}
-          {error && <ErrorIndicator message={error} />}
-          {!isLoading && !error && (
-            <div className="rounded-lg border border-border overflow-auto max-h-[70vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50 sticky top-0">
-                    <TableHead className="font-semibold w-[150px]">
-                      Name
-                    </TableHead>
-                    <TableHead className="font-semibold w-[200px]">
-                      Email
-                    </TableHead>
-                    <TableHead className="font-semibold w-[150px]">
-                      Discord
-                    </TableHead>
-                    <TableHead className="font-semibold w-[150px]">
-                      Phone
-                    </TableHead>
-                    <TableHead className="font-semibold text-center w-[100px]">
-                      Over 18
-                    </TableHead>
-                    <TableHead className="font-semibold w-[120px]">
-                      Applied On
-                    </TableHead>
-                    <TableHead className="text-right font-semibold w-[100px]">
-                      Actions
-                    </TableHead>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Discord</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Over 18</TableHead>
+                <TableHead>Applied On</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {applicants.map((a, index) => (
+                <TableRow key={a.id ? String(a.id) : `applicant-${index}`}>
+                  <TableCell>
+                    {a.first_name} {a.last_name}
+                  </TableCell>
+                  <TableCell>{a.email}</TableCell>
+                  <TableCell>{a.discord_handle}</TableCell>
+                  <TableCell>{a.phone_number}</TableCell>
+                  <TableCell>
+                    <Badge variant={a.is_over_18 ? "default" : "destructive"}>
+                      {a.is_over_18 ? "Yes" : "No"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(a.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        (window.location.href = `mailto:${a.email}`)
+                      }
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function GameManagementTab() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newGameName, setNewGameName] = useState("");
+  const [newGameMax, setNewGameMax] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const fetchGames = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/teams-games");
+      const data = await res.json();
+      if (!data.success)
+        throw new Error(data.message || "Failed to fetch games.");
+      setGames(data.data);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGames();
+  }, []);
+
+  const createGame = async () => {
+    if (!newGameName || !newGameMax) return alert("Please fill all fields.");
+    setIsCreating(true);
+    const res = await fetch("/api/teams-games", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "CREATE_GAME",
+        payload: {
+          name: newGameName,
+          max_players_per_team: Number(newGameMax),
+        },
+      }),
+    });
+    const data = await res.json();
+    setIsCreating(false);
+    if (!data.success) return alert(data.message);
+    setNewGameName("");
+    setNewGameMax("");
+    fetchGames();
+  };
+
+  const deleteGame = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this game?")) return;
+    const res = await fetch("/api/teams-games", {
+      method: "DELETE",
+      body: JSON.stringify({ action: "DELETE_GAME", payload: { id } }),
+    });
+    const data = await res.json();
+    if (!data.success) return alert(data.message);
+    fetchGames();
+  };
+
+  if (isLoading) return <LoadingIndicator text="Loading games..." />;
+  if (error) return <ErrorIndicator message={error} />;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Gamepad2 className="w-5 h-5" /> Game Management
+            </CardTitle>
+            <CardDescription>Manage all games and their rules.</CardDescription>
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" /> Add Game
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Game</DialogTitle>
+              </DialogHeader>
+              <Label>Game Name</Label>
+              <Input
+                value={newGameName}
+                onChange={(e) => setNewGameName(e.target.value)}
+              />
+              <Label>Max Players per Team</Label>
+              <Input
+                type="number"
+                value={newGameMax}
+                onChange={(e) => setNewGameMax(e.target.value)}
+              />
+              <DialogFooter>
+                <Button onClick={createGame} disabled={isCreating}>
+                  {isCreating ? "Creating..." : "Create Game"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {games.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No games yet.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Max Players</TableHead>
+                  <TableHead>Teams</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {games.map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell>{g.name}</TableCell>
+                    <TableCell>{g.max_players_per_team}</TableCell>
+                    <TableCell>{g.teams.length}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => deleteGame(g.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {applicants.length === 0 ? (
-                    <TableRow key="empty-applications">
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        No new applications found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    applicants.map((applicant, index) => (
-                      <motion.tr
-                        // FIX: Explicitly converting the number ID to a string to ensure no list key conflicts.
-                        key={String(applicant.id)}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="border-b border-border hover:bg-muted/20 transition-colors"
-                      >
-                        <TableCell className="font-medium">
-                          {applicant.first_name} {applicant.last_name}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {applicant.email}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {applicant.discord_handle}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {applicant.phone_number}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant={
-                              applicant.is_over_18 ? "default" : "destructive"
-                            }
-                            className="w-16 justify-center"
-                          >
-                            {applicant.is_over_18 ? "Yes" : "No"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(applicant.created_at).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 text-blue-500 hover:bg-blue-50"
-                            onClick={() =>
-                              (window.location.href = `mailto:${applicant.email}`)
-                            }
-                            title="Reply to Applicant"
-                          >
-                            <Mail className="w-4 h-4" />
-                          </Button>
-                          {/* Add more actions here (e.g., Delete/Archive) */}
-                        </TableCell>
-                      </motion.tr>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function TeamManagementTab() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const fetchGames = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/teams-games");
+      const data = await res.json();
+      if (!data.success)
+        throw new Error(data.message || "Failed to fetch teams.");
+      setGames(data.data);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGames();
+  }, []);
+
+  const createTeam = async () => {
+    if (!newTeamName || !selectedGame) return alert("Please fill all fields.");
+    setIsCreating(true);
+    const res = await fetch("/api/teams-games", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "CREATE_TEAM",
+        payload: { name: newTeamName, game_id: selectedGame },
+      }),
+    });
+    const data = await res.json();
+    setIsCreating(false);
+    if (!data.success) return alert(data.message);
+    setNewTeamName("");
+    setSelectedGame(null);
+    fetchGames();
+  };
+
+  const deleteTeam = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this team?")) return;
+    const res = await fetch("/api/teams-games", {
+      method: "DELETE",
+      body: JSON.stringify({ action: "DELETE_TEAM", payload: { id } }),
+    });
+    const data = await res.json();
+    if (!data.success) return alert(data.message);
+    fetchGames();
+  };
+
+  if (isLoading) return <LoadingIndicator text="Loading teams..." />;
+  if (error) return <ErrorIndicator message={error} />;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Users2 className="w-5 h-5" /> Team Management
+            </CardTitle>
+            <CardDescription>Manage teams for each game.</CardDescription>
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" /> Add Team
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Team</DialogTitle>
+              </DialogHeader>
+              <Label>Team Name</Label>
+              <Input
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+              />
+              <Label className="mt-2">Select Game</Label>
+              <Select onValueChange={setSelectedGame}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a game" />
+                </SelectTrigger>
+                <SelectContent>
+                  {games.map((game) => (
+                    <SelectItem key={game.id} value={game.id}>
+                      {game.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <DialogFooter>
+                <Button onClick={createTeam} disabled={isCreating}>
+                  {isCreating ? "Creating..." : "Create Team"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {games.map((game) => (
+            <div
+              key={game.id}
+              className="mb-6 border p-4 rounded-lg bg-muted/20"
+            >
+              <h2 className="font-semibold text-lg mb-2">{game.name}</h2>
+              {game.teams.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No teams for this game yet.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {game.teams.map((team) => (
+                    <li
+                      key={team.id}
+                      className="flex justify-between items-center p-2 bg-background border rounded"
+                    >
+                      <span>{team.name}</span>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => deleteTeam(team.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </CardContent>
       </Card>
     </motion.div>
@@ -250,201 +486,58 @@ function UserManagementTab({
   setToggleRoleUserId,
 }: any) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="border-border shadow-lg">
-        <CardHeader className="border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">User Management</CardTitle>
-              <CardDescription className="mt-2">
-                View and manage all registered users and their permissions.
-              </CardDescription>
-            </div>
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {users.length} Users
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-semibold">Username</TableHead>
-                  <TableHead className="font-semibold">Role</TableHead>
-                  <TableHead className="font-semibold">Joined</TableHead>
-                  <TableHead className="text-right font-semibold">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user: User, index: number) => (
-                  <motion.tr
-                    key={user.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="border-b border-border hover:bg-muted/20 transition-colors"
+    <Card>
+      <CardHeader>
+        <CardTitle>User Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user: User) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={user.role === "ADMIN" ? "default" : "secondary"}
                   >
-                    <TableCell className="font-medium">
-                      {user.username}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          user.role === "ADMIN" ? "default" : "secondary"
-                        }
-                        className="gap-1"
-                      >
-                        {user.role === "ADMIN" ? (
-                          <Shield className="w-3 h-3" />
-                        ) : (
-                          <UserIcon className="w-3 h-3" />
-                        )}
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(user.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setToggleRoleUserId(user.id)}
-                        disabled={user.id === currentUserId || isLoading}
-                        className="border-border hover:bg-accent"
-                      >
-                        Toggle Role
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteUserId(user.id)}
-                        disabled={user.id === currentUserId || isLoading}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-function TeamsManagementTab() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="border-border shadow-lg">
-        <CardHeader className="border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Team Management</CardTitle>
-              <CardDescription className="mt-2">
-                Create, edit, and remove team rosters for competitions.
-              </CardDescription>
-            </div>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Create Team
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg mb-2">No teams yet</p>
-            <p className="text-sm">Create your first team to get started</p>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-function PlayersManagementTab() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="border-border shadow-lg">
-        <CardHeader className="border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Player Management</CardTitle>
-              <CardDescription className="mt-2">
-                Add, remove, and assign players to teams and manage their
-                profiles.
-              </CardDescription>
-            </div>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Player
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg mb-2">No players yet</p>
-            <p className="text-sm">Add your first player to get started</p>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-function GamesManagementTab() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="border-border shadow-lg">
-        <CardHeader className="border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Game Management</CardTitle>
-              <CardDescription className="mt-2">
-                Add and remove supported esports titles for your platform.
-              </CardDescription>
-            </div>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Game
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg mb-2">No games yet</p>
-            <p className="text-sm">
-              Add your first supported game to get started
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+                    {user.role}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setToggleRoleUserId(user.id)}
+                    disabled={user.id === currentUserId || isLoading}
+                  >
+                    Toggle Role
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteUserId(user.id)}
+                    disabled={user.id === currentUserId || isLoading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -467,14 +560,12 @@ export function AdminContent({
           setToggleRoleUserId={setToggleRoleUserId}
         />
       );
-    case "Applicants": // <-- New Tab Case Added
+    case "Applicants":
       return <ApplicantsManagementTab />;
-    case "Teams":
-      return <TeamsManagementTab />;
-    case "Players":
-      return <PlayersManagementTab />;
     case "Games":
-      return <GamesManagementTab />;
+      return <GameManagementTab />;
+    case "Teams":
+      return <TeamManagementTab />;
     default:
       return null;
   }
