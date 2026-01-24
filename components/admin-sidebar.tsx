@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Swords, UserIcon, Gamepad2, Menu, X, Mail } from "lucide-react";
+import { Users, Swords, UserIcon, Gamepad2, Menu, X, Mail, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export type AdminTab = "Users" | "Teams" | "Players" | "Games" | "Applicants";
 
@@ -35,16 +36,21 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
 
   return (
     <>
-      <button
+      <motion.button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="md:hidden fixed top-20 left-4 z-50 p-2 rounded-lg bg-card border border-border shadow-lg hover:bg-accent transition-colors"
+        className="md:hidden fixed top-4 z-50 p-2 rounded-lg bg-card border border-border shadow-lg hover:bg-accent transition-colors"
+        animate={{
+          left: isMobileOpen ? "auto" : 16,
+          right: isMobileOpen ? 16 : "auto",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {isMobileOpen ? (
           <X className="w-5 h-5" />
         ) : (
           <Menu className="w-5 h-5" />
         )}
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {(isMobileOpen || isDesktop) && (
@@ -54,7 +60,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
             exit={{ x: -300, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className={cn(
-              "fixed md:sticky top-24 left-0 h-[calc(100vh-6rem)] bg-card border-r border-border z-40 flex flex-col shadow-xl md:shadow-none transition-all duration-300",
+              "fixed md:sticky top-0 left-0 h-full bg-card border-r border-border z-40 flex flex-col shadow-xl md:shadow-none transition-all duration-300",
               isCollapsed ? "w-20" : "w-72"
             )}
           >
@@ -96,7 +102,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
                       setIsMobileOpen(false);
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group relative overflow-hidden",
+                      "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group relative overflow-hidden cursor-pointer",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md"
                         : "hover:bg-accent text-foreground hover:translate-x-1"
@@ -166,7 +172,28 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
               })}
             </nav>
 
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border space-y-3">
+              <Link
+                href="/"
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded-lg text-sm font-medium hover:bg-accent transition-colors cursor-pointer",
+                  isCollapsed ? "justify-center" : ""
+                )}
+              >
+                <ArrowLeft className="w-4 h-4 flex-shrink-0" />
+                <AnimatePresence mode="wait">
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Return to Website
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
               <AnimatePresence mode="wait">
                 {!isCollapsed && (
                   <motion.div
@@ -191,7 +218,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsMobileOpen(false)}
-          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-30 top-24"
+          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-30"
         />
       )}
     </>

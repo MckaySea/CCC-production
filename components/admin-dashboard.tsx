@@ -85,35 +85,33 @@ export function AdminDashboard({ users, currentUserId }: AdminDashboardProps) {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="pt-16">
-          <div className="flex">
-            <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="flex h-screen">
+          <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-            <main className="flex-1 p-8 md:ml-0 overflow-x-hidden">
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="mb-8"
-              >
-                <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Admin Dashboard
-                </h1>
-                <p className="text-muted-foreground text-lg">
-                  Manage your platform content, users, and settings.
-                </p>
-              </motion.div>
+          <main className="flex-1 p-4 pt-6 pl-16 md:p-8 md:pl-8 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-8"
+            >
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                Manage your platform content, users, and settings.
+              </p>
+            </motion.div>
 
-              <AdminContent
-                activeTab={activeTab}
-                users={users}
-                currentUserId={currentUserId}
-                isLoading={isLoading}
-                setDeleteUserId={setDeleteUserId}
-                setToggleRoleUserId={setToggleRoleUserId}
-              />
-            </main>
-          </div>
+            <AdminContent
+              activeTab={activeTab}
+              users={users}
+              currentUserId={currentUserId}
+              isLoading={isLoading}
+              setDeleteUserId={setDeleteUserId}
+              setToggleRoleUserId={setToggleRoleUserId}
+            />
+          </main>
         </div>
       </div>
 

@@ -27,6 +27,9 @@ import {
   Gamepad2,
   Users2,
   Users,
+  ChevronDown,
+  ChevronUp,
+  UserMinus,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -419,6 +422,20 @@ function TeamManagementTab() {
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(
     null
   );
+  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const [removingPlayer, setRemovingPlayer] = useState<string | null>(null);
+
+  const toggleTeamExpanded = (teamId: string) => {
+    setExpandedTeams((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(teamId)) {
+        newSet.delete(teamId);
+      } else {
+        newSet.add(teamId);
+      }
+      return newSet;
+    });
+  };
 
   const fetchGames = async () => {
     setIsLoading(true);
@@ -462,7 +479,6 @@ function TeamManagementTab() {
       fetchGames();
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
     } finally {
       setIsCreating(false);
     }
@@ -482,7 +498,28 @@ function TeamManagementTab() {
       fetchGames();
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
+    }
+  };
+
+  const removePlayerFromTeam = async (userId: string) => {
+    setRemovingPlayer(userId);
+    try {
+      const res = await fetch("/api/teams-games", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          team_id: null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success)
+        throw new Error(data.message || "Failed to remove player.");
+      fetchGames();
+    } catch (e: any) {
+      console.error(e.message);
+    } finally {
+      setRemovingPlayer(null);
     }
   };
 
@@ -492,16 +529,16 @@ function TeamManagementTab() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
           <div>
-            <CardTitle className="flex items-center gap-2 text-2xl">
+            <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
               <Users2 className="w-5 h-5" /> Team Management
             </CardTitle>
-            <CardDescription>Manage teams for each game.</CardDescription>
+            <CardDescription className="text-sm">Manage teams and their rosters for each game.</CardDescription>
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 w-full sm:w-auto">
                 <Plus className="w-4 h-4" /> Add Team
               </Button>
             </DialogTrigger>
@@ -563,59 +600,149 @@ function TeamManagementTab() {
                   key={game.id}
                   className="border p-4 rounded-lg bg-muted/20 shadow-sm"
                 >
-                  <h2 className="font-bold text-xl mb-3 border-b pb-2 text-primary flex items-center gap-2">
-                    <Gamepad2 className="w-4 h-4" /> {game.name}
+                  <h2 className="font-bold text-lg sm:text-xl mb-3 border-b pb-2 text-primary flex flex-wrap items-center gap-2">
+                    <Gamepad2 className="w-5 h-5 flex-shrink-0" /> 
+                    <span className="flex-1 min-w-0">{game.name}</span>
+                    <Badge variant="outline" className="font-normal text-xs sm:text-sm">
+                      {game.teams.length} team{game.teams.length !== 1 ? "s" : ""}
+                    </Badge>
                   </h2>
                   {game.teams.length === 0 ? (
                     <p className="text-sm text-muted-foreground pt-2">
                       No teams for this game yet.
                     </p>
                   ) : (
-                    <ul className="space-y-3 pt-2">
-                      {game.teams.map((team) => (
-                        <li
-                          key={team.id}
-                          className="flex justify-between items-center p-3 bg-background border rounded-md shadow-sm"
-                        >
-                          <span className="font-medium">{team.name}</span>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => setShowConfirmDelete(team.id)}
+                    <div className="space-y-3 pt-2">
+                      {game.teams.map((team) => {
+                        const isExpanded = expandedTeams.has(team.id);
+                        const memberCount = team.users?.length || 0;
+                        const isFull = memberCount >= game.max_players_per_team;
+
+                        return (
+                          <div
+                            key={team.id}
+                            className="border rounded-lg bg-background shadow-sm overflow-hidden"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          {/* Simple Delete Confirmation Modal */}
-                          {showConfirmDelete === team.id && (
-                            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-                              <Card className="p-6">
-                                <h3 className="font-semibold mb-3">
-                                  Confirm Deletion
-                                </h3>
-                                <p className="text-sm mb-4">
-                                  Are you sure you want to delete team "
-                                  {team.name}"?
-                                </p>
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => setShowConfirmDelete(null)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    onClick={() => deleteTeam(team.id)}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </Card>
+                            {/* Team Header - Always Visible */}
+                            <div
+                              className="flex flex-wrap items-center justify-between gap-2 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => toggleTeamExpanded(team.id)}
+                            >
+                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                )}
+                                <span className="font-semibold truncate">{team.name}</span>
+                                <Badge
+                                  variant={isFull ? "default" : "secondary"}
+                                  className={`text-xs ${isFull ? "bg-green-600" : ""}`}
+                                >
+                                  {memberCount}/{game.max_players_per_team}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowConfirmDelete(team.id);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+
+                            {/* Expanded Team Members */}
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="border-t bg-muted/30"
+                              >
+                                <div className="p-3">
+                                  {memberCount === 0 ? (
+                                    <p className="text-sm text-muted-foreground text-center py-2">
+                                      No players assigned to this team yet.
+                                    </p>
+                                  ) : (
+                                    <ul className="space-y-2">
+                                      {team.users?.map((user) => (
+                                        <li
+                                          key={user.id}
+                                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-background rounded-md border"
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                            <span className="font-medium truncate">{user.username}</span>
+                                            <Badge
+                                              variant={user.role === "ADMIN" ? "default" : "outline"}
+                                              className="text-xs flex-shrink-0"
+                                            >
+                                              {user.role}
+                                            </Badge>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                            onClick={() => removePlayerFromTeam(user.id)}
+                                            disabled={removingPlayer === user.id}
+                                          >
+                                            {removingPlayer === user.id ? (
+                                              <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                              <>
+                                                <UserMinus className="w-4 h-4 mr-1" />
+                                                Remove
+                                              </>
+                                            )}
+                                          </Button>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {/* Delete Confirmation Dialog */}
+                            {showConfirmDelete === team.id && (
+                              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                                <Card className="p-4 sm:p-6 w-full max-w-md">
+                                  <h3 className="font-semibold mb-3">
+                                    Confirm Deletion
+                                  </h3>
+                                  <p className="text-sm mb-4">
+                                    Are you sure you want to delete team "
+                                    {team.name}"? This will remove all player
+                                    assignments.
+                                  </p>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setShowConfirmDelete(null)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      onClick={() => deleteTeam(team.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </Card>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               ))}
