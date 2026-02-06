@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
         // --- Supabase Query (Authentication) ---
         const { data: user, error } = await supabaseAdmin
           .from("users")
-          .select("id, username, password, role") // Ensure 'password' is selected for bcrypt check
+          .select("id, username, password, role, profile_image") // Include profile_image
           .eq("username", credentials.username)
           .single();
 
@@ -43,6 +43,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           username: user.username,
           role: user.role,
+          profile_image: user.profile_image || null,
         };
       },
     }),
@@ -53,6 +54,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.username = user.username;
         token.role = user.role;
+        token.profile_image = (user as any).profile_image;
       }
       return token;
     },
@@ -61,6 +63,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
         session.user.role = token.role as string;
+        session.user.profile_image = token.profile_image as string | null;
       }
       return session;
     },

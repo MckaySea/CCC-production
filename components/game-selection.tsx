@@ -22,8 +22,8 @@ export function GameSelection() {
     const cached = localStorage.getItem(cacheKey)
     if (cached) {
       const { data, timestamp } = JSON.parse(cached)
-      // Use cache if less than 5 minutes old
-      if (Date.now() - timestamp < 5 * 60 * 1000) {
+      // Use cache if less than 1 minute old
+      if (Date.now() - timestamp < 1 * 60 * 1000) {
         setGames(data)
         setIsLoading(false)
         return

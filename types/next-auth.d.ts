@@ -12,6 +12,7 @@ declare module "next-auth" {
       id: string
       username: string
       role: string
+      profile_image?: string | null
     }
   }
 }

@@ -372,3 +372,62 @@ export async function DELETE(request) {
     );
   }
 }
+
+/**
+ * PUT handler to update an existing game.
+ * Expects { id: 'game_id', name?: string, description?: string, max_players_per_team?: number }
+ */
+export async function PUT(request) {
+  try {
+    const { id, name, description, max_players_per_team } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Missing game ID for update." },
+        { status: 400 }
+      );
+    }
+
+    // Build update object dynamically
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description || null;
+    if (max_players_per_team !== undefined) updateData.max_players_per_team = max_players_per_team;
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { success: false, message: "No fields to update." },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("games")
+      .update(updateData)
+      .eq("id", id)
+      .select();
+
+    if (error) {
+      console.error("[TEAMS-GAMES ROUTE] ❌ Game update failed:", error.message);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to update game.",
+          error: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, message: "Game updated successfully.", data: data[0] },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[TEAMS-GAMES ROUTE] 🛑 Error in PUT:", error.message);
+    return NextResponse.json(
+      { success: false, message: "Internal Server Error." },
+      { status: 500 }
+    );
+  }
+}

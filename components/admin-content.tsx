@@ -34,6 +34,7 @@ import {
   UserPlus,
   User as UserIcon,
   Upload,
+  Pencil,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -227,6 +228,16 @@ function GameManagementTab() {
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Edit state
+  const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editMax, setEditMax] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchGames = async () => {
     setIsLoading(true);
@@ -263,6 +274,43 @@ function GameManagementTab() {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith("image/")) handleImageSelect(file);
+  };
+
+  // Edit image handlers
+  const handleEditImageSelect = (file: File) => {
+    setEditImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setEditImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleEditImageSelect(file);
+  };
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) handleEditImageSelect(file);
+  };
+
+  const openEditDialog = (game: Game) => {
+    setEditingGame(game);
+    setEditName(game.name);
+    setEditMax(String(game.max_players_per_team));
+    setEditDescription(game.description || "");
+    setEditImagePreview(game.image_url || null);
+    setEditImage(null);
+  };
+
+  const closeEditDialog = () => {
+    setEditingGame(null);
+    setEditName("");
+    setEditMax("");
+    setEditDescription("");
+    setEditImage(null);
+    setEditImagePreview(null);
   };
 
   const createGame = async () => {
@@ -313,6 +361,46 @@ function GameManagementTab() {
     } finally {
       setIsCreating(false);
       setIsUploading(false);
+    }
+  };
+
+  const updateGame = async () => {
+    if (!editingGame || !editName || !editMax) return;
+    setIsUpdating(true);
+    try {
+      // Update game info
+      const res = await fetch("/api/teams-games", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingGame.id,
+          name: editName,
+          max_players_per_team: Number(editMax),
+          description: editDescription || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success)
+        throw new Error(data.message || "Failed to update game.");
+
+      // If new image was selected, upload it
+      if (editImage) {
+        const formData = new FormData();
+        formData.append("file", editImage);
+        formData.append("gameId", editingGame.id);
+
+        await fetch("/api/games/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
+
+      closeEditDialog();
+      fetchGames();
+    } catch (e: any) {
+      console.error(e.message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -459,7 +547,7 @@ function GameManagementTab() {
                   )}
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openEditDialog(g)}>
                         <h3 className="font-bold text-lg truncate">{g.name}</h3>
                         <p className="text-sm text-muted-foreground">
                           {g.teams?.length || 0} teams • Max {g.max_players_per_team} players
@@ -470,14 +558,24 @@ function GameManagementTab() {
                           </p>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                        onClick={() => setShowConfirmDelete(g.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+                          onClick={() => openEditDialog(g)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                          onClick={() => setShowConfirmDelete(g.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                   {showConfirmDelete === g.id && (
@@ -515,6 +613,96 @@ function GameManagementTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Game Dialog */}
+      {editingGame && (
+        <Dialog open={!!editingGame} onOpenChange={(open) => !open && closeEditDialog()}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Game</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editGameName">Game Name *</Label>
+                <Input
+                  id="editGameName"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g. Valorant, League of Legends"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editMaxPlayers">Max Players per Team *</Label>
+                <Input
+                  id="editMaxPlayers"
+                  type="number"
+                  value={editMax}
+                  onChange={(e) => setEditMax(e.target.value)}
+                  placeholder="e.g. 5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editGameDescription">Description</Label>
+                <textarea
+                  id="editGameDescription"
+                  className="w-full min-h-[80px] p-3 text-sm border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Describe the game and your team's involvement..."
+                />
+              </div>
+              <div>
+                <Label>Game Image</Label>
+                <div
+                  className="mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => editFileInputRef.current?.click()}
+                  onDrop={handleEditDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {editImagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={editImagePreview}
+                        alt="Preview"
+                        className="max-h-32 mx-auto rounded-lg object-cover"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">Click to change</p>
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground">
+                      <Upload className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">Click or drag image to upload</p>
+                      <p className="text-xs">JPEG, PNG, WebP, GIF (max 5MB)</p>
+                    </div>
+                  )}
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleEditFileChange}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeEditDialog} className="cursor-pointer">
+                Cancel
+              </Button>
+              <Button onClick={updateGame} disabled={isUpdating} className="cursor-pointer">
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </motion.div>
   );
 }

@@ -27,7 +27,7 @@ export function Navbar() {
   // Fetch games dynamically with client-side caching
   useEffect(() => {
     const cacheKey = "navbar-games";
-    const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+    const cacheExpiry = 1 * 60 * 1000; // 1 minute
 
     // Check localStorage cache first
     const cached = localStorage.getItem(cacheKey);

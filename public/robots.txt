@@ -1,0 +1,13 @@
+# CCC Esports - Robots.txt
+# https://ccc-esports.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages from indexing
+Disallow: /admin
+Disallow: /auth/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://ccc-esports.com/sitemap.xml
