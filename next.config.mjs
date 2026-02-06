@@ -6,6 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: ['@radix-ui/react-select', '@radix-ui/react-popper', 'lucide-react'],
 }
 
 export default nextConfig
