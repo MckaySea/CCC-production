@@ -1,4 +1,5 @@
 import { Instagram, Youtube, Twitch } from "lucide-react"
+import { SiDiscord } from "react-icons/si"
 
 export function Footer() {
   return (
@@ -11,6 +12,15 @@ export function Footer() {
           </div>
 
           <div className="flex gap-4">
+            <a
+              href="https://discord.gg/A4zWxnMEwJ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
+              aria-label="Discord"
+            >
+              <SiDiscord className="w-5 h-5" />
+            </a>
             <a
               href="https://www.instagram.com/ccc.crushgaming/"
               target="_blank"

@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";;
 import { Menu, X, LogOut, User, Shield } from "lucide-react";
 import Image from "next/image";
 import { Instagram, Youtube } from "lucide-react";
-import { SiTwitch } from "react-icons/si";
+import { SiTwitch, SiDiscord } from "react-icons/si";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +127,15 @@ export function Navbar() {
             )}
 
             <div className="flex items-center gap-3 ml-6 pl-6 border-l border-primary/20">
+              <a
+                href="https://discord.gg/A4zWxnMEwJ"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground hover:text-primary transition-colors"
+                aria-label="Discord"
+              >
+                <SiDiscord className="w-5 h-5" />
+              </a>
               <a
                 href="https://www.instagram.com/ccc.crushgaming/"
                 target="_blank"
@@ -318,6 +327,15 @@ export function Navbar() {
               )}
 
               <div className="flex items-center gap-6 pt-4 border-t border-primary/20">
+                <a
+                  href="https://discord.gg/A4zWxnMEwJ"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground hover:text-primary transition-colors"
+                  aria-label="Discord"
+                >
+                  <SiDiscord className="w-6 h-6" />
+                </a>
                 <a
                   href="https://www.instagram.com/ccc.crushgaming/"
                   target="_blank"
