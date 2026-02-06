@@ -1,4 +1,4 @@
-import { Instagram, Twitter, Youtube, Twitch } from "lucide-react"
+import { Instagram, Youtube, Twitch } from "lucide-react"
 
 export function Footer() {
   return (
@@ -12,32 +12,31 @@ export function Footer() {
 
           <div className="flex gap-4">
             <a
-              href="#"
-              className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
-              aria-label="Twitter"
-            >
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a
-              href="#"
+              href="https://www.instagram.com/ccc.crushgaming/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
               aria-label="Instagram"
             >
               <Instagram className="w-5 h-5" />
             </a>
             <a
-              href="#"
-              className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
-              aria-label="Twitch"
-            >
-              <Twitch className="w-5 h-5" />
-            </a>
-            <a
-              href="#"
+              href="https://www.youtube.com/@CCC-Crush-Esports"
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
               aria-label="YouTube"
             >
               <Youtube className="w-5 h-5" />
+            </a>
+            <a
+              href="https://www.twitch.tv/cloviscollegees"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
+              aria-label="Twitch"
+            >
+              <Twitch className="w-5 h-5" />
             </a>
           </div>
         </div>

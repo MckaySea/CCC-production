@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";;
 import { Menu, X, LogOut, User, Shield } from "lucide-react";
 import Image from "next/image";
-import { Facebook, Instagram } from "lucide-react";
-import { SiDiscord } from "react-icons/si";
+import { Instagram, Youtube } from "lucide-react";
+import { SiTwitch } from "react-icons/si";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -128,16 +128,7 @@ export function Navbar() {
 
             <div className="flex items-center gap-3 ml-6 pl-6 border-l border-primary/20">
               <a
-                href="https://discord.gg/cccesports"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:text-primary transition-colors"
-                aria-label="Discord"
-              >
-                <SiDiscord className="w-5 h-5" />
-              </a>
-              <a
-                href="https://instagram.com/cccesports"
+                href="https://www.instagram.com/ccc.crushgaming/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-foreground hover:text-primary transition-colors"
@@ -146,13 +137,22 @@ export function Navbar() {
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href="https://facebook.com/cccesports"
+                href="https://www.youtube.com/@CCC-Crush-Esports"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-foreground hover:text-primary transition-colors"
-                aria-label="Facebook"
+                aria-label="YouTube"
               >
-                <Facebook className="w-5 h-5" />
+                <Youtube className="w-5 h-5" />
+              </a>
+              <a
+                href="https://www.twitch.tv/cloviscollegees"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground hover:text-primary transition-colors"
+                aria-label="Twitch"
+              >
+                <SiTwitch className="w-5 h-5" />
               </a>
             </div>
 
@@ -319,16 +319,7 @@ export function Navbar() {
 
               <div className="flex items-center gap-6 pt-4 border-t border-primary/20">
                 <a
-                  href="https://discord.gg/cccesports"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-foreground hover:text-primary transition-colors"
-                  aria-label="Discord"
-                >
-                  <SiDiscord className="w-6 h-6" />
-                </a>
-                <a
-                  href="https://instagram.com/cccesports"
+                  href="https://www.instagram.com/ccc.crushgaming/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-foreground hover:text-primary transition-colors"
@@ -337,13 +328,22 @@ export function Navbar() {
                   <Instagram className="w-6 h-6" />
                 </a>
                 <a
-                  href="https://facebook.com/cccesports"
+                  href="https://www.youtube.com/@CCC-Crush-Esports"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-foreground hover:text-primary transition-colors"
-                  aria-label="Facebook"
+                  aria-label="YouTube"
                 >
-                  <Facebook className="w-6 h-6" />
+                  <Youtube className="w-6 h-6" />
+                </a>
+                <a
+                  href="https://www.twitch.tv/cloviscollegees"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground hover:text-primary transition-colors"
+                  aria-label="Twitch"
+                >
+                  <SiTwitch className="w-6 h-6" />
                 </a>
               </div>
             </div>
