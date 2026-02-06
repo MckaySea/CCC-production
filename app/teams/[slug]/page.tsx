@@ -11,21 +11,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Mapping from URL slugs to game names in database
-const slugToGameName: Record<string, string> = {
-  "league-of-legends": "League of Legends",
-  "valorant": "Valorant",
-  "cs2": "CS2",
-  "rocket-league": "Rocket League",
-  "overwatch-2": "Overwatch 2",
-  "apex-legends": "Apex Legends",
-};
+// Helper to create URL-friendly slug from game name
+function createSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
 
-// Static descriptions for each game
+// Static descriptions for each game (fallback)
 const gameDescriptions: Record<string, string> = {
   "League of Legends": "Our League of Legends team competes in the collegiate circuit, showcasing strategic gameplay and mechanical prowess in the world's most popular MOBA.",
   "Valorant": "Our Valorant squad brings tactical precision and agent mastery to every match, competing at the highest level of collegiate play.",
   "CS2": "Our Counter-Strike 2 roster combines veteran experience with fresh talent, executing flawless strategies in the most competitive FPS.",
+  "Counter Strike 2": "Our Counter-Strike 2 roster combines veteran experience with fresh talent, executing flawless strategies in the most competitive FPS.",
   "Rocket League": "Our Rocket League team showcases incredible aerial mechanics and team coordination in this high-octane vehicular soccer game.",
   "Overwatch 2": "Our Overwatch 2 roster demonstrates exceptional hero synergy and adaptability across all roles in this dynamic team-based shooter.",
   "Apex Legends": "Our Apex Legends squad excels in fast-paced battle royale action with superior positioning and legend composition strategies.",
@@ -51,16 +50,25 @@ interface Game {
   teams: Team[];
 }
 
-export function generateStaticParams() {
-  return Object.keys(slugToGameName).map((slug) => ({
-    slug,
-  }));
-}
-
+// Fetch game data by matching slug against all games
 async function getGameData(slug: string): Promise<Game | null> {
-  const gameName = slugToGameName[slug];
-  if (!gameName) return null;
+  // First, get all games to find one matching the slug
+  const { data: games, error: gamesError } = await supabase
+    .from("games")
+    .select("id, name");
 
+  if (gamesError || !games) {
+    console.error("Failed to fetch games:", gamesError);
+    return null;
+  }
+
+  // Find the game where the slug matches
+  const matchedGame = games.find(g => createSlug(g.name) === slug);
+  if (!matchedGame) {
+    return null;
+  }
+
+  // Now fetch the full game data with teams and users
   const { data, error } = await supabase
     .from("games")
     .select(`
@@ -78,7 +86,7 @@ async function getGameData(slug: string): Promise<Game | null> {
         )
       )
     `)
-    .eq("name", gameName)
+    .eq("id", matchedGame.id)
     .single();
 
   if (error || !data) {
@@ -89,14 +97,13 @@ async function getGameData(slug: string): Promise<Game | null> {
   return data as Game;
 }
 
-export default async function TeamPage({ params }: { params: { slug: string } }) {
-  const gameName = slugToGameName[params.slug];
+export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const game = await getGameData(slug);
   
-  if (!gameName) {
+  if (!game) {
     notFound();
   }
-
-  const game = await getGameData(params.slug);
 
   // Collect all players from all teams for this game
   const allPlayers: Player[] = game?.teams?.flatMap(team => team.users || []) || [];
@@ -115,11 +122,11 @@ export default async function TeamPage({ params }: { params: { slug: string } })
               <ArrowLeft className="w-4 h-4" /> Back to Home
             </Link>
 
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
+              <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-4xl md:text-6xl font-black uppercase mb-4">{gameName}</h1>
+                <h1 className="text-4xl md:text-6xl font-black uppercase mb-4">{game.name}</h1>
                 <p className="text-lg text-muted-foreground max-w-2xl">
-                  {gameDescriptions[gameName]}
+                  {gameDescriptions[game.name] || `Our ${game.name} team competes at the highest level of collegiate esports.`}
                 </p>
               </div>
             </div>

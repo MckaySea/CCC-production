@@ -22,7 +22,7 @@ export async function GET() {
   try {
     const { data: games, error } = await supabase
       .from("games")
-      .select("id, name")
+      .select("id, name, description, image_url")
       .order("name", { ascending: true });
 
     if (error) {
@@ -35,8 +35,11 @@ export async function GET() {
 
     // Transform to include slugs
     const gamesWithSlugs = games.map((game) => ({
+      id: game.id,
       name: game.name,
       slug: createSlug(game.name),
+      description: game.description,
+      image_url: game.image_url,
     }));
 
     // Return with cache headers - cache for 5 minutes, stale-while-revalidate for 10

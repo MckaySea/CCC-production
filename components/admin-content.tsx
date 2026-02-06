@@ -30,8 +30,12 @@ import {
   ChevronDown,
   ChevronUp,
   UserMinus,
+  Search,
+  UserPlus,
+  User as UserIcon,
+  Upload,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +85,8 @@ interface Team {
 interface Game {
   id: string;
   name: string;
+  description?: string | null;
+  image_url?: string | null;
   max_players_per_team: number;
   teams: Team[];
 }
@@ -213,11 +219,14 @@ function GameManagementTab() {
   const [error, setError] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameMax, setNewGameMax] = useState("");
+  const [newGameDescription, setNewGameDescription] = useState("");
+  const [newGameImage, setNewGameImage] = useState<File | null>(null);
+  const [newGameImagePreview, setNewGameImagePreview] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(
-    null
-  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchGames = async () => {
     setIsLoading(true);
@@ -238,11 +247,30 @@ function GameManagementTab() {
     fetchGames();
   }, []);
 
+  const handleImageSelect = (file: File) => {
+    setNewGameImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setNewGameImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageSelect(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) handleImageSelect(file);
+  };
+
   const createGame = async () => {
     if (!newGameName || !newGameMax)
-      return console.error("Please fill all fields.");
+      return console.error("Please fill required fields.");
     setIsCreating(true);
     try {
+      // First create the game
       const res = await fetch("/api/teams-games", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -251,6 +279,7 @@ function GameManagementTab() {
           payload: {
             name: newGameName,
             max_players_per_team: Number(newGameMax),
+            description: newGameDescription || null,
           },
         }),
       });
@@ -258,15 +287,32 @@ function GameManagementTab() {
       if (!res.ok || !data.success)
         throw new Error(data.message || "Failed to create game.");
 
+      // If image was selected, upload it
+      if (newGameImage && data.data?.id) {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", newGameImage);
+        formData.append("gameId", data.data.id);
+
+        await fetch("/api/games/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
+
+      // Reset form
       setNewGameName("");
       setNewGameMax("");
+      setNewGameDescription("");
+      setNewGameImage(null);
+      setNewGameImagePreview(null);
       setShowCreateDialog(false);
       fetchGames();
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
     } finally {
       setIsCreating(false);
+      setIsUploading(false);
     }
   };
 
@@ -284,7 +330,6 @@ function GameManagementTab() {
       fetchGames();
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
     }
   };
 
@@ -294,48 +339,93 @@ function GameManagementTab() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
           <div>
-            <CardTitle className="flex items-center gap-2 text-2xl">
+            <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
               <Gamepad2 className="w-5 h-5" /> Game Management
             </CardTitle>
-            <CardDescription>Manage all games and their rules.</CardDescription>
+            <CardDescription>Manage all games, descriptions, and images.</CardDescription>
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 cursor-pointer">
                 <Plus className="w-4 h-4" /> Add Game
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create Game</DialogTitle>
+                <DialogTitle>Create New Game</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="gameName">Game Name</Label>
+                  <Label htmlFor="gameName">Game Name *</Label>
                   <Input
                     id="gameName"
                     value={newGameName}
                     onChange={(e) => setNewGameName(e.target.value)}
+                    placeholder="e.g. Valorant, League of Legends"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="maxPlayers">Max Players per Team</Label>
+                  <Label htmlFor="maxPlayers">Max Players per Team *</Label>
                   <Input
                     id="maxPlayers"
                     type="number"
                     value={newGameMax}
                     onChange={(e) => setNewGameMax(e.target.value)}
+                    placeholder="e.g. 5"
                   />
+                </div>
+                <div>
+                  <Label htmlFor="gameDescription">Description</Label>
+                  <textarea
+                    id="gameDescription"
+                    className="w-full min-h-[80px] p-3 text-sm border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={newGameDescription}
+                    onChange={(e) => setNewGameDescription(e.target.value)}
+                    placeholder="Describe the game and your team's involvement..."
+                  />
+                </div>
+                <div>
+                  <Label>Game Image</Label>
+                  <div
+                    className="mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    {newGameImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={newGameImagePreview}
+                          alt="Preview"
+                          className="max-h-32 mx-auto rounded-lg object-cover"
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        <Upload className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Click or drag image to upload</p>
+                        <p className="text-xs">JPEG, PNG, WebP, GIF (max 5MB)</p>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={createGame} disabled={isCreating}>
-                  {isCreating ? (
+                <Button onClick={createGame} disabled={isCreating || isUploading} className="cursor-pointer">
+                  {isCreating || isUploading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                      Creating...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isUploading ? "Uploading..." : "Creating..."}
                     </>
                   ) : (
                     "Create Game"
@@ -348,65 +438,80 @@ function GameManagementTab() {
         <CardContent>
           {games.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              No games yet.
+              No games yet. Click "Add Game" to create one.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Max Players</TableHead>
-                  <TableHead>Teams</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {games.map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell>{g.name}</TableCell>
-                    <TableCell>{g.max_players_per_team}</TableCell>
-                    <TableCell>{g.teams.length}</TableCell>
-                    <TableCell>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {games.map((g) => (
+                <Card key={g.id} className="overflow-hidden group">
+                  {g.image_url ? (
+                    <div className="h-32 overflow-hidden bg-muted">
+                      <img
+                        src={g.image_url}
+                        alt={g.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <Gamepad2 className="w-12 h-12 text-primary/30" />
+                    </div>
+                  )}
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg truncate">{g.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {g.teams?.length || 0} teams • Max {g.max_players_per_team} players
+                        </p>
+                        {g.description && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {g.description}
+                          </p>
+                        )}
+                      </div>
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                         onClick={() => setShowConfirmDelete(g.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                      {/* Simple Delete Confirmation Modal (replace with shadcn/ui Dialog if possible) */}
-                      {showConfirmDelete === g.id && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-                          <Card className="p-6">
-                            <h3 className="font-semibold mb-3">
-                              Confirm Deletion
-                            </h3>
-                            <p className="text-sm mb-4">
-                              Are you sure you want to delete the game "{g.name}
-                              "?
-                            </p>
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setShowConfirmDelete(null)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() => deleteGame(g.id)}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </Card>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </CardContent>
+                  {showConfirmDelete === g.id && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                      onClick={() => setShowConfirmDelete(null)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Card className="p-6 max-w-sm">
+                          <h3 className="font-semibold mb-3">Confirm Deletion</h3>
+                          <p className="text-sm mb-4">
+                            Are you sure you want to delete "{g.name}"? This will also delete all teams and unassign players.
+                          </p>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setShowConfirmDelete(null)} className="cursor-pointer">
+                              Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={() => deleteGame(g.id)} className="cursor-pointer">
+                              Delete
+                            </Button>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -946,15 +1051,16 @@ function UserManagementTab({
 }
 
 // -------------------- PLAYERS TAB --------------------
-// FIX: Accepting 'users' as a prop and removing internal user fetch
 function PlayersManagementTab({ users }: { users: User[] }) {
   const [games, setGames] = useState<Game[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAssigning, setIsAssigning] = useState(false); // Loading state for assignment
-  const [isRemoving, setIsRemoving] = useState<string | null>(null); // Loading state for removal (store user ID)
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isRemoving, setIsRemoving] = useState<string | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -978,16 +1084,14 @@ function PlayersManagementTab({ users }: { users: User[] }) {
   }, []);
 
   const assignPlayer = async () => {
-    if (!selectedUserId || !selectedTeamId)
-      return console.error("Select both fields.");
-    setIsAssigning(true); // Set loading
+    if (!selectedUser || !selectedTeamId) return;
+    setIsAssigning(true);
     try {
       const res = await fetch("/api/teams-games", {
-        // CHANGED URL
-        method: "PATCH", // CHANGED METHOD
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: selectedUserId,
+          user_id: selectedUser.id,
           team_id: selectedTeamId,
         }),
       });
@@ -995,181 +1099,361 @@ function PlayersManagementTab({ users }: { users: User[] }) {
       if (!res.ok || !data.success)
         throw new Error(data.message || "Failed to assign player.");
 
-      fetchData(); // Refetch games to show updated team composition
-      setSelectedUserId(null);
+      fetchData();
+      setSelectedUser(null);
       setSelectedTeamId(null);
+      setShowAssignModal(false);
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
     } finally {
-      setIsAssigning(false); // Unset loading
+      setIsAssigning(false);
     }
   };
 
-  // NEW FUNCTION to remove a player
   const removePlayer = async (userId: string) => {
-    setIsRemoving(userId); // Set loading for this specific user
+    setIsRemoving(userId);
     try {
       const res = await fetch("/api/teams-games", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: userId,
-          team_id: null, // Set team_id to null to unassign
+          team_id: null,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success)
         throw new Error(data.message || "Failed to remove player.");
 
-      fetchData(); // Refetch games to show updated team composition
+      fetchData();
     } catch (e: any) {
       console.error(e.message);
-      // In a real app, display error in a toast/modal
     } finally {
-      setIsRemoving(null); // Unset loading
+      setIsRemoving(null);
     }
+  };
+
+  const openAssignModal = (user: User) => {
+    setSelectedUser(user);
+    setSelectedTeamId(null);
+    setShowAssignModal(true);
   };
 
   if (isLoading)
     return <LoadingIndicator text="Loading teams and players..." />;
   if (error) return <ErrorIndicator message={error} />;
 
-  const availableTeams = games.flatMap((g) => g.teams);
+  const availableTeams = games.flatMap((g) => 
+    g.teams.map(t => ({ ...t, gameName: g.name, maxPlayers: g.max_players_per_team }))
+  );
+
+  // Filter users based on search
+  const filteredUsers = users.filter(u =>
+    u.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get users who are not assigned to any team
+  const unassignedUsers = filteredUsers.filter(u => 
+    !games.some(g => g.teams.some(t => t.users?.some(tu => tu.id === u.id)))
+  );
+
+  // Get all assigned users with their team info
+  const assignedUsers = games.flatMap(g => 
+    g.teams.flatMap(t => 
+      (t.users || []).map(u => ({ ...u, teamName: t.name, gameName: g.name, teamId: t.id }))
+    )
+  ).filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Users className="w-6 h-6" /> Players Management
-          </CardTitle>
-          <CardDescription>
-            Assign users to specific teams for each game.
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+          <div>
+            <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6" /> Players Management
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Assign players to teams and view current rosters
+            </CardDescription>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 items-end">
-            <div className="flex-1 w-full">
-              <Label htmlFor="selectUser">User to Assign</Label>
-              <Select
-                onValueChange={setSelectedUserId}
-                value={selectedUserId || ""}
-              >
-                <SelectTrigger id="selectUser">
-                  <SelectValue placeholder="Select User" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 w-full">
-              <Label htmlFor="selectTeam">Target Team</Label>
-              <Select
-                onValueChange={setSelectedTeamId}
-                value={selectedTeamId || ""}
-              >
-                <SelectTrigger id="selectTeam">
-                  <SelectValue placeholder="Select Team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTeams.map((t) => {
-                    const game = games.find((g) =>
-                      g.teams.some((team) => team.id === t.id)
-                    );
-                    return (
-                      <SelectItem key={t.id} value={t.id}>
-                        {game?.name || "Unknown Game"} - {t.name}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={assignPlayer}
-              className="w-full md:w-auto"
-              disabled={isAssigning}
-            >
-              {isAssigning ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Assign Player"
-              )}
-            </Button>
+        
+        <CardContent className="space-y-8">
+          {/* Unassigned Players Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Available Players 
+              <Badge variant="secondary">{unassignedUsers.length}</Badge>
+            </h3>
+            
+            {unassignedUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6 bg-muted/30 rounded-lg">
+                {searchQuery ? "No matching unassigned players" : "All players are assigned to teams"}
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {unassignedUsers.map((user) => (
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="group"
+                  >
+                    <Card className="overflow-hidden hover:border-primary/50 transition-all cursor-pointer"
+                          onClick={() => openAssignModal(user)}>
+                      <div className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted border-2 border-primary/20 flex-shrink-0">
+                            {user.profile_image ? (
+                              <img
+                                src={user.profile_image}
+                                alt={user.username}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <UserIcon className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{user.username}</p>
+                            {user.preferred_role && (
+                              <p className="text-xs text-primary">{user.preferred_role}</p>
+                            )}
+                          </div>
+                          <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {user.bio && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{user.bio}</p>
+                        )}
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-8 pt-4">
-            <h3 className="text-xl font-semibold border-b pb-2">
+          {/* Team Rosters Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Users2 className="w-5 h-5 text-primary" />
               Team Rosters
             </h3>
-            {games.map((game) => (
-              <div
-                key={game.id}
-                className="border p-4 rounded-lg bg-background shadow-md"
-              >
-                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 text-primary">
-                  <Gamepad2 className="w-4 h-4" /> {game.name} (Max:{" "}
-                  {game.max_players_per_team} per team)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {game.teams.map((team) => (
-                    <Card key={team.id} className="bg-muted/30">
-                      <CardHeader className="py-3">
-                        <CardTitle className="text-base flex items-center justify-between">
-                          {team.name}
-                          <Badge variant="secondary">
-                            {team.users?.length || 0} /{" "}
-                            {game.max_players_per_team}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-3">
-                        {team.users && team.users.length > 0 ? (
-                          <ul className="space-y-2 text-sm">
-                            {team.users.map((user) => (
-                              <li
-                                key={user.id}
-                                className="flex items-center justify-between p-1 bg-background rounded shadow-sm"
-                              >
-                                <span className="text-muted-foreground truncate">
-                                  {user.username}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => removePlayer(user.id)}
-                                  disabled={isRemoving === user.id}
+            
+            <div className="space-y-6">
+              {games.map((game) => (
+                <div key={game.id} className="border rounded-lg overflow-hidden">
+                  <div className="bg-primary/10 px-4 py-3 flex items-center gap-2">
+                    <Gamepad2 className="w-5 h-5 text-primary" />
+                    <span className="font-bold">{game.name}</span>
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      Max {game.max_players_per_team} per team
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                    {game.teams.map((team) => (
+                      <Card key={team.id} className="bg-muted/20">
+                        <CardHeader className="py-3 px-4">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold">{team.name}</CardTitle>
+                            <Badge 
+                              variant={(team.users?.length || 0) >= game.max_players_per_team ? "default" : "secondary"}
+                              className={(team.users?.length || 0) >= game.max_players_per_team ? "bg-green-600" : ""}
+                            >
+                              {team.users?.length || 0}/{game.max_players_per_team}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-4">
+                          {team.users && team.users.length > 0 ? (
+                            <div className="space-y-2">
+                              {team.users.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center gap-3 p-2 bg-background rounded-lg border group"
                                 >
-                                  {isRemoving === user.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4 text-destructive" />
-                                  )}
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-center text-gray-500">
-                            No players assigned yet.
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                                  <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                                    {user.profile_image ? (
+                                      <img
+                                        src={user.profile_image}
+                                        alt={user.username}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <UserIcon className="w-4 h-4 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{user.username}</p>
+                                    {user.assigned_role && (
+                                      <p className="text-xs text-primary">{user.assigned_role}</p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                    onClick={() => removePlayer(user.id)}
+                                    disabled={isRemoving === user.id}
+                                  >
+                                    {isRemoving === user.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <UserMinus className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No players assigned
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Player Modal */}
+      {showAssignModal && selectedUser && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowAssignModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", duration: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg"
+          >
+            <Card className="shadow-2xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                  Assign Player to Team
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                {/* Player Profile Card */}
+                <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg border">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-muted border-2 border-primary/30 flex-shrink-0">
+                    {selectedUser.profile_image ? (
+                      <img
+                        src={selectedUser.profile_image}
+                        alt={selectedUser.username}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <UserIcon className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg">{selectedUser.username}</h3>
+                    {selectedUser.preferred_role && (
+                      <Badge variant="secondary" className="mt-1">
+                        Prefers: {selectedUser.preferred_role}
+                      </Badge>
+                    )}
+                    {selectedUser.bio && (
+                      <p className="text-sm text-muted-foreground mt-2">{selectedUser.bio}</p>
+                    )}
+                    {!selectedUser.bio && !selectedUser.preferred_role && (
+                      <p className="text-sm text-muted-foreground mt-1 italic">No profile info set</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Team Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="teamSelect">Select Team</Label>
+                  <Select onValueChange={setSelectedTeamId} value={selectedTeamId || ""}>
+                    <SelectTrigger id="teamSelect">
+                      <SelectValue placeholder="Choose a team..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTeams.map((team) => {
+                        const isFull = (team.users?.length || 0) >= team.maxPlayers;
+                        return (
+                          <SelectItem 
+                            key={team.id} 
+                            value={team.id}
+                            disabled={isFull}
+                          >
+                            <span className="flex items-center gap-2">
+                              {team.gameName} - {team.name}
+                              {isFull && <span className="text-xs text-muted-foreground">(Full)</span>}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAssignModal(false)}
+                    className="flex-1 cursor-pointer"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={assignPlayer}
+                    disabled={!selectedTeamId || isAssigning}
+                    className="flex-1 cursor-pointer"
+                  >
+                    {isAssigning ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Assigning...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Assign to Team
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

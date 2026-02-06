@@ -14,7 +14,7 @@ export default async function AdminPage() {
   // --- Supabase Query (Get all users) ---
   const { data: users, error } = await supabaseAdmin
     .from("users")
-    .select("id, username, role, created_at") // Columns from your Supabase 'users' table
+    .select("id, username, role, created_at, profile_image, bio, preferred_role, assigned_role")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -28,7 +28,11 @@ export default async function AdminPage() {
     id: user.id,
     username: user.username,
     role: user.role,
-    createdAt: user.created_at, // Use created_at from Supabase
+    createdAt: user.created_at,
+    profile_image: user.profile_image,
+    bio: user.bio,
+    preferred_role: user.preferred_role,
+    assigned_role: user.assigned_role,
   }));
 
   return (

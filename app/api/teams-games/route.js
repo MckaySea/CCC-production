@@ -18,6 +18,8 @@ export async function GET() {
         `
         id,
         name,
+        description,
+        image_url,
         max_players_per_team,
         teams (
           id,
@@ -70,7 +72,7 @@ export async function POST(request) {
     const { action, payload } = await request.json();
 
     if (action === "CREATE_GAME") {
-      const { name, max_players_per_team } = payload;
+      const { name, max_players_per_team, description, image_url } = payload;
       if (!name || !max_players_per_team) {
         return NextResponse.json(
           {
@@ -83,7 +85,7 @@ export async function POST(request) {
 
       const { data, error } = await supabase
         .from("games")
-        .insert([{ name, max_players_per_team }])
+        .insert([{ name, max_players_per_team, description: description || null, image_url: image_url || null }])
         .select();
 
       if (error) {

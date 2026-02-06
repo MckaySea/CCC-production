@@ -161,8 +161,16 @@ export function Navbar() {
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="w-5 h-5" />
+                  <Button variant="ghost" size="icon" className="rounded-full cursor-pointer overflow-hidden">
+                    {session.user.profile_image ? (
+                      <img
+                        src={session.user.profile_image}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -199,8 +207,7 @@ export function Navbar() {
               <Link href="/auth/signin">
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="border-primary/20 hover:bg-primary/40  hover:text-white bg-transparent h"
+                  className="border-primary hover:bg-primary hover:text-white bg-primary/10 text-primary font-semibold px-5 py-2 cursor-pointer"
                 >
                   Sign In
                 </Button>
