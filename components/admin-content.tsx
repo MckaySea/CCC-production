@@ -35,6 +35,10 @@ import {
   User as UserIcon,
   Upload,
   Pencil,
+  Download,
+  FileSpreadsheet,
+  Phone,
+  Shield,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -64,6 +68,10 @@ interface User {
   bio?: string | null;
   preferred_role?: string | null;
   assigned_role?: string | null;
+  full_name?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
+  profile_completed?: boolean;
 }
 
 interface Applicant {
@@ -150,6 +158,34 @@ function ApplicantsManagementTab() {
     window.location.href = `mailto:${email}`;
   };
 
+  // Export to CSV function
+  const exportToCSV = () => {
+    if (applicants.length === 0) return;
+
+    const headers = ["Name", "Email", "Discord", "Phone", "Over 18", "Applied On"];
+    const rows = applicants.map((a) => [
+      `${a.first_name} ${a.last_name}`,
+      a.email,
+      a.discord_handle,
+      a.phone_number,
+      a.is_over_18 ? "Yes" : "No",
+      new Date(a.created_at).toLocaleDateString(),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ccc-esports-applicants-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) return <LoadingIndicator text="Loading applicants..." />;
   if (error) return <ErrorIndicator message={error} />;
 
@@ -157,12 +193,26 @@ function ApplicantsManagementTab() {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="border-border shadow-lg">
         <CardHeader className="border-b border-border bg-muted/30">
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Users className="w-6 h-6" /> Applicant Queue
-          </CardTitle>
-          <CardDescription>
-            Review and process all incoming user applications.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Users className="w-6 h-6" /> Applicant Queue
+              </CardTitle>
+              <CardDescription>
+                Review and process all incoming user applications.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={exportToCSV}
+              disabled={applicants.length === 0}
+              className="cursor-pointer gap-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export to CSV
+              <Download className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -1178,60 +1228,186 @@ function UserManagementTab({
   setDeleteUserId,
   setToggleRoleUserId,
 }: any) {
+  // Export users to CSV
+  const exportToCSV = () => {
+    if (users.length === 0) return;
+
+    const headers = [
+      "Username",
+      "Full Name",
+      "Email",
+      "Phone",
+      "Role",
+      "Preferred Role",
+      "Assigned Role",
+      "Joined Date",
+      "Profile Completed",
+    ];
+    
+    const rows = users.map((u: User) => [
+      u.username,
+      u.full_name || "N/A",
+      u.email || "N/A",
+      u.phone_number || "N/A",
+      u.role,
+      u.preferred_role || "N/A",
+      u.assigned_role || "N/A",
+      new Date(u.createdAt).toLocaleDateString(),
+      u.profile_completed ? "Yes" : "No",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row: any[]) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ccc-esports-users-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
+    <Card className="border-border shadow-lg">
+      <CardHeader className="border-b border-border bg-muted/30">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Users2 className="w-6 h-6" /> User Management
+            </CardTitle>
+            <CardDescription>
+              Manage all registered users, roles, and permissions.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            onClick={exportToCSV}
+            disabled={users.length === 0}
+            className="cursor-pointer gap-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Export to CSV
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <LoadingIndicator text="Fetching users..." />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user: User) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "ADMIN" ? "default" : "secondary"}
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setToggleRoleUserId(user.id)}
-                      disabled={user.id === currentUserId || isLoading}
-                    >
-                      Toggle Role
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteUserId(user.id)}
-                      disabled={user.id === currentUserId || isLoading}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[300px]">User</TableHead>
+                  <TableHead>Contact Info</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: User) => (
+                  <TableRow key={user.id} className="group">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-muted border overflow-hidden flex-shrink-0">
+                          {user.profile_image ? (
+                            <img
+                              src={user.profile_image}
+                              alt={user.username}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-bold">
+                              {user.username.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">
+                            {user.username}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {user.full_name || "No name set"}
+                          </span>
+                          {user.profile_completed && (
+                            <Badge variant="outline" className="w-fit mt-1 text-[10px] h-4 px-1 py-0 border-green-500/50 text-green-500">
+                              Profile Completed
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 text-sm">
+                        {user.email ? (
+                          <div className="flex items-center gap-2 text-foreground/80">
+                            <Mail className="w-3 h-3 text-muted-foreground" />
+                            {user.email}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">No email</span>
+                        )}
+                        {user.phone_number ? (
+                          <div className="flex items-center gap-2 text-foreground/80">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            {user.phone_number}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">No phone</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          user.role === "ADMIN"
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setToggleRoleUserId(user.id)}
+                          disabled={user.id === currentUserId || isLoading}
+                          className="h-8 px-2 text-muted-foreground hover:text-primary"
+                          title="Toggle Admin Role"
+                        >
+                          <Shield className="w-4 h-4 mr-1" />
+                          Role
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteUserId(user.id)}
+                          disabled={user.id === currentUserId || isLoading}
+                          className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

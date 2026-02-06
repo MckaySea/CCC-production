@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthSessionProvider } from "@/components/session-provider"
+import { ProfileCheckWrapper } from "@/components/profile-check-wrapper"
 import { Toaster } from "sonner"
 import "./globals.css"
 
@@ -97,10 +98,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          <ProfileCheckWrapper>
+            {children}
+          </ProfileCheckWrapper>
+        </AuthSessionProvider>
         <Toaster richColors position="top-center" />
         <Analytics />
       </body>
     </html>
   )
 }
+

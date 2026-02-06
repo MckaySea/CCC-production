@@ -19,33 +19,17 @@ import {
 import { toast } from "sonner";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { User, Camera, Loader2, Save, Upload } from "lucide-react";
+import { User, Camera, Loader2, Save, Upload, Mail, Phone, UserCheck } from "lucide-react";
 import Image from "next/image";
 
 // Common esports roles for preferred role selection
 const PREFERRED_ROLES = [
-  "Duelist",
-  "Controller",
-  "Sentinel",
-  "Initiator",
-  "Support",
-  "Tank",
-  "DPS",
-  "Healer",
-  "Flex",
-  "IGL",
-  "Entry Fragger",
-  "AWPer",
-  "Lurker",
-  "Top Lane",
-  "Jungle",
-  "Mid Lane",
-  "ADC",
-  "Striker",
-  "Midfielder",
-  "Goalkeeper",
-  "Fragger",
-  "Scout",
+  "Duelist", "Controller", "Sentinel", "Initiator",
+  "Support", "Tank", "DPS", "Healer", "Flex", "IGL",
+  "Entry Fragger", "AWPer", "Lurker",
+  "Top Lane", "Jungle", "Mid Lane", "ADC",
+  "Striker", "Midfielder", "Goalkeeper",
+  "Fragger", "Scout",
 ];
 
 interface ProfileData {
@@ -56,6 +40,10 @@ interface ProfileData {
   preferred_role: string | null;
   assigned_role: string | null;
   team_id: string | null;
+  email: string | null;
+  phone_number: string | null;
+  full_name: string | null;
+  profile_completed: boolean;
 }
 
 export default function ProfilePage() {
@@ -71,6 +59,9 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState("");
   const [bio, setBio] = useState("");
   const [preferredRole, setPreferredRole] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -93,6 +84,9 @@ export default function ProfilePage() {
         setProfileImage(data.data.profile_image || "");
         setBio(data.data.bio || "");
         setPreferredRole(data.data.preferred_role || "");
+        setEmail(data.data.email || "");
+        setPhoneNumber(data.data.phone_number || "");
+        setFullName(data.data.full_name || "");
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -110,13 +104,11 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image must be less than 5MB");
       return;
@@ -165,6 +157,9 @@ export default function ProfilePage() {
           profile_image: profileImage || null,
           bio: bio || null,
           preferred_role: preferredRole || null,
+          email: email || null,
+          phone_number: phoneNumber || null,
+          full_name: fullName || null,
         }),
       });
 
@@ -278,9 +273,6 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileImage(e.target.value)}
                     className="bg-muted/50"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    e.g., Discord avatar URL, social media image, etc.
-                  </p>
                 </div>
 
                 {/* Short Description */}
@@ -320,6 +312,60 @@ export default function ProfilePage() {
                   <p className="text-xs text-muted-foreground">
                     This helps admins know your preference when assigning roles
                   </p>
+                </div>
+
+                {/* Contact Info Section */}
+                <div className="border-t border-border pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-primary" />
+                    Contact Information
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This info is for club records only and won't be shown publicly.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="bg-muted/50"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email Address
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-muted/50"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="(555) 123-4567"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="bg-muted/50"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Assigned Role (Read-only) */}

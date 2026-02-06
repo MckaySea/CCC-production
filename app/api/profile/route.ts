@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data: user, error } = await supabaseAdmin
       .from("users")
-      .select("id, username, profile_image, bio, preferred_role, assigned_role, team_id")
+      .select("id, username, profile_image, bio, preferred_role, assigned_role, team_id, email, phone_number, full_name, profile_completed")
       .eq("id", session.user.id)
       .single();
 
@@ -42,7 +42,7 @@ export async function GET() {
 }
 
 /**
- * PATCH - Update current user's profile (bio, preferred_role, profile_image URL)
+ * PATCH - Update current user's profile
  */
 export async function PATCH(request: Request) {
   try {
@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { bio, preferred_role, profile_image } = body;
+    const { bio, preferred_role, profile_image, email, phone_number, full_name, profile_completed } = body;
 
     // Validate bio length (150 char max for short description)
     if (bio && bio.length > 150) {
@@ -70,12 +70,16 @@ export async function PATCH(request: Request) {
     if (bio !== undefined) updateData.bio = bio;
     if (preferred_role !== undefined) updateData.preferred_role = preferred_role;
     if (profile_image !== undefined) updateData.profile_image = profile_image;
+    if (email !== undefined) updateData.email = email;
+    if (phone_number !== undefined) updateData.phone_number = phone_number;
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (profile_completed !== undefined) updateData.profile_completed = profile_completed;
 
     const { data, error } = await supabaseAdmin
       .from("users")
       .update(updateData)
       .eq("id", session.user.id)
-      .select("id, username, profile_image, bio, preferred_role")
+      .select("id, username, profile_image, bio, preferred_role, email, phone_number, full_name, profile_completed")
       .single();
 
     if (error) {
