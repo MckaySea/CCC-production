@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";;
 import { Menu, X, LogOut, User, Shield } from "lucide-react";
 import Image from "next/image";
 import { Facebook, Instagram } from "lucide-react";
@@ -21,16 +21,43 @@ import {
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [games, setGames] = useState<{ name: string; slug: string }[]>([]);
   const { data: session, status } = useSession();
 
-  const games = [
-    { name: "League of Legends", slug: "league-of-legends" },
-    { name: "Valorant", slug: "valorant" },
-    { name: "CS2", slug: "cs2" },
-    { name: "Rocket League", slug: "rocket-league" },
-    { name: "Overwatch 2", slug: "overwatch-2" },
-    { name: "Apex Legends", slug: "apex-legends" },
-  ];
+  // Fetch games dynamically with client-side caching
+  useEffect(() => {
+    const cacheKey = "navbar-games";
+    const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+
+    // Check localStorage cache first
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheExpiry) {
+          setGames(data);
+          return;
+        }
+      } catch (e) {
+        // Invalid cache, continue to fetch
+      }
+    }
+
+    // Fetch from API
+    fetch("/api/games")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setGames(data.data);
+          // Cache in localStorage
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ data: data.data, timestamp: Date.now() })
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to fetch games:", err));
+  }, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/20">
@@ -153,6 +180,12 @@ export function Navbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <Link href="/profile">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem
                     onClick={() => signOut()}
                     className="cursor-pointer"
@@ -244,6 +277,14 @@ export function Navbar() {
                       </Badge>
                     )}
                   </p>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Profile
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"

@@ -25,7 +25,11 @@ export async function GET() {
           users ( 
             id,
             username,
-            role
+            role,
+            profile_image,
+            bio,
+            assigned_role,
+            preferred_role
           )
         )
       `
@@ -155,12 +159,12 @@ export async function POST(request) {
 }
 
 /**
- * PATCH handler to assign or unassign a user from a team.
- * Expects { user_id: 'uuid', team_id: 'uuid' | null }
+ * PATCH handler to assign or unassign a user from a team, and/or update assigned_role.
+ * Expects { user_id: 'uuid', team_id: 'uuid' | null, assigned_role?: string | null }
  */
 export async function PATCH(request) {
   try {
-    const { user_id, team_id } = await request.json();
+    const { user_id, team_id, assigned_role } = await request.json();
 
     if (!user_id) {
       return NextResponse.json(
@@ -169,30 +173,53 @@ export async function PATCH(request) {
       );
     }
 
+    // Build update object dynamically
+    const updateData = {};
+    if (team_id !== undefined) {
+      updateData.team_id = team_id || null;
+    }
+    if (assigned_role !== undefined) {
+      updateData.assigned_role = assigned_role || null;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { success: false, message: "No fields to update." },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("users")
-      .update({ team_id: team_id || null })
+      .update(updateData)
       .eq("id", user_id)
-      .select("id, username, team_id");
+      .select("id, username, team_id, assigned_role");
 
     if (error) {
       console.error(
-        "[TEAMS-GAMES ROUTE] ❌ User assignment failed:",
+        "[TEAMS-GAMES ROUTE] ❌ User update failed:",
         error.message
       );
       const message =
         error.code === "23503"
           ? "The specified team does not exist."
-          : "Failed to update user's team assignment.";
+          : "Failed to update user.";
       return NextResponse.json(
         { success: false, message, error: error.message },
         { status: 500 }
       );
     }
 
-    const message = team_id
-      ? `User ${user_id} assigned to team ${team_id}.`
-      : `User ${user_id} unassigned from team.`;
+    let message = "";
+    if (team_id !== undefined) {
+      message = team_id
+        ? `User ${user_id} assigned to team ${team_id}.`
+        : `User ${user_id} unassigned from team.`;
+    }
+    if (assigned_role !== undefined) {
+      message += message ? " " : "";
+      message += `Assigned role updated to: ${assigned_role || "none"}.`;
+    }
 
     return NextResponse.json(
       { success: true, message, data: data[0] },
@@ -227,7 +254,47 @@ export async function DELETE(request) {
     }
 
     if (action === "DELETE_GAME") {
-      // Delete game (and cascade to its teams if foreign key is ON DELETE CASCADE)
+      // First, get all teams belonging to this game
+      const { data: teams, error: teamsError } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("game_id", id);
+
+      if (teamsError) {
+        console.error(
+          "[TEAMS-GAMES ROUTE] ❌ Failed to fetch teams for game:",
+          teamsError.message
+        );
+      }
+
+      const teamIds = teams?.map((t) => t.id) || [];
+      let usersUnassigned = 0;
+
+      // Unassign all users from all teams in this game
+      if (teamIds.length > 0) {
+        const { data: affectedUsers } = await supabase
+          .from("users")
+          .update({ team_id: null, assigned_role: null })
+          .in("team_id", teamIds)
+          .select("id");
+        
+        usersUnassigned = affectedUsers?.length || 0;
+
+        // Delete all teams in this game
+        const { error: deleteTeamsError } = await supabase
+          .from("teams")
+          .delete()
+          .eq("game_id", id);
+
+        if (deleteTeamsError) {
+          console.error(
+            "[TEAMS-GAMES ROUTE] ⚠️ Team deletion failed:",
+            deleteTeamsError.message
+          );
+        }
+      }
+
+      // Delete the game
       const { error } = await supabase.from("games").delete().eq("id", id);
 
       if (error) {
@@ -246,7 +313,10 @@ export async function DELETE(request) {
       }
 
       return NextResponse.json(
-        { success: true, message: `Game ${id} deleted successfully.` },
+        { 
+          success: true, 
+          message: `Game deleted successfully. Removed ${teamIds.length} team(s) and unassigned ${usersUnassigned} player(s).` 
+        },
         { status: 200 }
       );
     }

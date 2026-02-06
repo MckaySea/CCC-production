@@ -18,4 +18,9 @@ export interface User {
   password: string;
   role: "USER" | "ADMIN";
   created_at: string;
+  team_id?: string | null;
+  profile_image?: string | null;
+  bio?: string | null;
+  preferred_role?: string | null;
+  assigned_role?: string | null;
 }

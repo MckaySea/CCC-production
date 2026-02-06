@@ -55,6 +55,10 @@ interface User {
   username: string;
   role: string;
   createdAt: Date;
+  profile_image?: string | null;
+  bio?: string | null;
+  preferred_role?: string | null;
+  assigned_role?: string | null;
 }
 
 interface Applicant {
@@ -422,6 +426,7 @@ function TeamManagementTab() {
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(
     null
   );
+  const [showConfirmDeleteGame, setShowConfirmDeleteGame] = useState<string | null>(null);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [removingPlayer, setRemovingPlayer] = useState<string | null>(null);
 
@@ -495,6 +500,23 @@ function TeamManagementTab() {
       const data = await res.json();
       if (!res.ok || !data.success)
         throw new Error(data.message || "Failed to delete team.");
+      fetchGames();
+    } catch (e: any) {
+      console.error(e.message);
+    }
+  };
+
+  const deleteGame = async (id: string) => {
+    setShowConfirmDeleteGame(null);
+    try {
+      const res = await fetch("/api/teams-games", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "DELETE_GAME", payload: { id } }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success)
+        throw new Error(data.message || "Failed to delete game.");
       fetchGames();
     } catch (e: any) {
       console.error(e.message);
@@ -606,7 +628,75 @@ function TeamManagementTab() {
                     <Badge variant="outline" className="font-normal text-xs sm:text-sm">
                       {game.teams.length} team{game.teams.length !== 1 ? "s" : ""}
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer hover:scale-110 transition-all"
+                      onClick={() => setShowConfirmDeleteGame(game.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </h2>
+
+                  {/* Delete Game Confirmation Dialog */}
+                  {showConfirmDeleteGame === game.id && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                      onClick={() => setShowConfirmDeleteGame(null)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: "spring", duration: 0.3 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Card className="p-6 w-full max-w-md border-destructive/30 shadow-2xl">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                              <Gamepad2 className="w-6 h-6 text-destructive" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-bold text-lg mb-2">
+                                Delete Game
+                              </h3>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{game.name}&quot;</span>?
+                              </p>
+                              <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mb-4">
+                                <p className="text-sm text-destructive font-medium">⚠️ This will permanently:</p>
+                                <ul className="text-sm text-muted-foreground mt-1 ml-4 list-disc">
+                                  <li>Delete all {game.teams.length} team(s) in this game</li>
+                                  <li>Remove {game.teams.reduce((acc, t) => acc + (t.users?.length || 0), 0)} player(s) from their teams</li>
+                                </ul>
+                                <p className="text-xs text-muted-foreground mt-2">Players will remain in the system but won&apos;t be on any team.</p>
+                              </div>
+                              <div className="flex justify-end gap-3">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setShowConfirmDeleteGame(null)}
+                                  className="cursor-pointer hover:bg-muted transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => deleteGame(game.id)}
+                                  className="cursor-pointer hover:bg-destructive/90 transition-all hover:scale-105"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete Game
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    </motion.div>
+                  )}
                   {game.teams.length === 0 ? (
                     <p className="text-sm text-muted-foreground pt-2">
                       No teams for this game yet.
@@ -645,7 +735,7 @@ function TeamManagementTab() {
                               <Button
                                 variant="destructive"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-8 w-8 cursor-pointer hover:scale-110 transition-all"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setShowConfirmDelete(team.id);
@@ -676,7 +766,7 @@ function TeamManagementTab() {
                                           key={user.id}
                                           className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-background rounded-md border"
                                         >
-                                          <div className="flex items-center gap-2 min-w-0">
+                                          <div className="flex flex-wrap items-center gap-2 min-w-0">
                                             <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                             <span className="font-medium truncate">{user.username}</span>
                                             <Badge
@@ -685,6 +775,16 @@ function TeamManagementTab() {
                                             >
                                               {user.role}
                                             </Badge>
+                                            {user.assigned_role && (
+                                              <Badge variant="secondary" className="text-xs">
+                                                🎮 {user.assigned_role}
+                                              </Badge>
+                                            )}
+                                            {user.preferred_role && !user.assigned_role && (
+                                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                                Prefers: {user.preferred_role}
+                                              </Badge>
+                                            )}
                                           </div>
                                           <Button
                                             variant="ghost"
@@ -712,32 +812,55 @@ function TeamManagementTab() {
 
                             {/* Delete Confirmation Dialog */}
                             {showConfirmDelete === team.id && (
-                              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                                <Card className="p-4 sm:p-6 w-full max-w-md">
-                                  <h3 className="font-semibold mb-3">
-                                    Confirm Deletion
-                                  </h3>
-                                  <p className="text-sm mb-4">
-                                    Are you sure you want to delete team "
-                                    {team.name}"? This will remove all player
-                                    assignments.
-                                  </p>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      onClick={() => setShowConfirmDelete(null)}
-                                    >
-                                      Cancel
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      onClick={() => deleteTeam(team.id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
-                                </Card>
-                              </div>
+                              <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                                onClick={() => setShowConfirmDelete(null)}
+                              >
+                                <motion.div
+                                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                  transition={{ type: "spring", duration: 0.3 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Card className="p-6 w-full max-w-md border-destructive/30 shadow-2xl">
+                                    <div className="flex items-start gap-4">
+                                      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                                        <Trash2 className="w-6 h-6 text-destructive" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <h3 className="font-bold text-lg mb-2">
+                                          Delete Team
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground mb-4">
+                                          Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{team.name}&quot;</span>? 
+                                          This will remove all {team.users?.length || 0} player(s) from this team. This action cannot be undone.
+                                        </p>
+                                        <div className="flex justify-end gap-3">
+                                          <Button
+                                            variant="outline"
+                                            onClick={() => setShowConfirmDelete(null)}
+                                            className="cursor-pointer hover:bg-muted transition-colors"
+                                          >
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            onClick={() => deleteTeam(team.id)}
+                                            className="cursor-pointer hover:bg-destructive/90 transition-all hover:scale-105"
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Delete Team
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                </motion.div>
+                              </motion.div>
                             )}
                           </div>
                         );
