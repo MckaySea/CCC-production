@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, Gamepad2 } from "lucide-react";
-import { JoinModal } from "./join-modal";
+import { ContactModal } from "./join-modal";
 import Link from "next/link";
 import Image from "next/image";
 
 export function Hero() {
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   return (
     <>
@@ -79,9 +79,9 @@ export function Hero() {
               size="lg"
               variant="outline"
               className="text-lg font-bold uppercase tracking-wide bg-transparent cursor-pointer"
-              onClick={() => setJoinModalOpen(true)}
+              onClick={() => setContactModalOpen(true)}
             >
-              Join Us
+              Contact Us
             </Button>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function Hero() {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10" />
       </section>
 
-      <JoinModal open={joinModalOpen} onOpenChange={setJoinModalOpen} />
+      <ContactModal open={contactModalOpen} onOpenChange={setContactModalOpen} />
     </>
   );
 }

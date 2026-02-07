@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-interface JoinModalProps {
+interface ContactModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function JoinModal({ open, onOpenChange }: JoinModalProps) {
+export function ContactModal({ open, onOpenChange }: ContactModalProps) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -48,7 +48,7 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
       if (!res.ok) {
         toast.error(result.message || "Failed to submit application.");
       } else {
-        toast.success("✅ Application submitted successfully!");
+        toast.success("Thanks for reaching out! We'll get back to you soon. 🎮");
         onOpenChange(false);
         setFormData({
           firstName: "",
@@ -72,10 +72,10 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
       <DialogContent className="sm:max-w-[600px] bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/30 shadow-2xl shadow-primary/20">
         <DialogHeader className="space-y-3 pb-2">
           <DialogTitle className="text-3xl font-black uppercase text-center bg-gradient-to-r from-primary via-primary to-cyan-400 bg-clip-text text-transparent">
-            Join CCC Esports
+            Contact Us
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-center text-base">
-            Become part of our competitive gaming community
+            Get in touch with our team — we'd love to hear from you!
           </DialogDescription>
         </DialogHeader>
 
@@ -229,7 +229,7 @@ export function JoinModal({ open, onOpenChange }: JoinModalProps) {
               disabled={loading}
               className="flex-1 font-bold uppercase tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
             >
-              {loading ? "Submitting..." : "Submit Application"}
+              {loading ? "Sending..." : "Send Message"}
             </Button>
             <Button
               type="button"
