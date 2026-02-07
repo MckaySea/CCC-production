@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AdminTab } from "./admin-sidebar";
+import { AnalyticsTab } from "./analytics-tab";
 import {
   Card,
   CardContent,
@@ -1851,6 +1852,8 @@ export function AdminContent({
     case "Players":
       // FIX APPLIED: Pass the users prop to PlayersManagementTab
       return <PlayersManagementTab users={users} />;
+    case "Analytics":
+      return <AnalyticsTab />;
     default:
       return null;
   }

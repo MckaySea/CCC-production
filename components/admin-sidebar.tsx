@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Swords, UserIcon, Gamepad2, Menu, X, Mail, ArrowLeft } from "lucide-react";
+import { Users, Swords, UserIcon, Gamepad2, Menu, X, Mail, ArrowLeft, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-export type AdminTab = "Users" | "Teams" | "Players" | "Games" | "Applicants";
+export type AdminTab = "Users" | "Teams" | "Players" | "Games" | "Applicants" | "Analytics";
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -20,6 +20,7 @@ const tabs: { name: AdminTab; icon: React.ElementType; description: string }[] =
     { name: "Players", icon: UserIcon, description: "Manage player profiles" },
     { name: "Games", icon: Gamepad2, description: "Manage supported games" },
     { name: "Applicants", icon: Mail, description: "Manage applicants" },
+    { name: "Analytics", icon: BarChart3, description: "View site analytics" },
   ];
 
 export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {

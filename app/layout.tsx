@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthSessionProvider } from "@/components/session-provider"
 import { ProfileCheckWrapper } from "@/components/profile-check-wrapper"
+import { PageViewTracker } from "@/components/page-view-tracker"
 import { Toaster } from "sonner"
 import "./globals.css"
 
@@ -111,6 +112,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <AuthSessionProvider>
+          <PageViewTracker />
           <ProfileCheckWrapper>
             {children}
           </ProfileCheckWrapper>
