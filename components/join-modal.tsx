@@ -27,6 +27,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
     discord: "",
     phone: "",
     email: "",
+    message: "",
     over18: "",
   });
 
@@ -56,6 +57,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
           discord: "",
           phone: "",
           email: "",
+          message: "",
           over18: "",
         });
       }
@@ -182,6 +184,25 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label
+              htmlFor="message"
+              className="text-foreground font-semibold text-sm"
+            >
+              Message
+            </Label>
+            <textarea
+              id="message"
+              placeholder="Tell us what you're interested in, questions you have, or anything else you'd like us to know..."
+              value={formData.message}
+              onChange={(e) =>
+                setFormData({ ...formData, message: e.target.value })
+              }
+              rows={4}
+              className="w-full min-h-[100px] p-3 text-sm rounded-md bg-background/50 border border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-all placeholder:text-muted-foreground"
+            />
+          </div>
+
           <div className="space-y-3 pt-2">
             <Label className="text-foreground font-semibold text-sm">
               Are you over the age of 18? *
@@ -227,7 +248,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 font-bold uppercase tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
+              className="flex-1 font-bold uppercase tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all cursor-pointer"
             >
               {loading ? "Sending..." : "Send Message"}
             </Button>
@@ -235,7 +256,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="font-bold uppercase tracking-wide border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
+              className="font-bold uppercase tracking-wide border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all cursor-pointer"
             >
               Cancel
             </Button>

@@ -6,7 +6,7 @@ import { Users, Swords, UserIcon, Gamepad2, Menu, X, Mail, ArrowLeft, BarChart3 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-export type AdminTab = "Users" | "Teams" | "Players" | "Games" | "Applicants" | "Analytics";
+export type AdminTab = "Users" | "Teams" | "Players" | "Games" | "Inquiries" | "Analytics";
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -19,7 +19,7 @@ const tabs: { name: AdminTab; icon: React.ElementType; description: string }[] =
     { name: "Teams", icon: Swords, description: "Manage team rosters" },
     { name: "Players", icon: UserIcon, description: "Manage player profiles" },
     { name: "Games", icon: Gamepad2, description: "Manage supported games" },
-    { name: "Applicants", icon: Mail, description: "Manage applicants" },
+    { name: "Inquiries", icon: Mail, description: "View contact submissions" },
     { name: "Analytics", icon: BarChart3, description: "View site analytics" },
   ];
 

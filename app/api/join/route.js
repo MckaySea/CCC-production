@@ -17,7 +17,7 @@ export async function POST(request) {
     const formData = await request.json();
     console.log("[JOIN ROUTE] ✅ Received data:", formData);
 
-    const { firstName, lastName, discord, phone, email, over18 } = formData;
+    const { firstName, lastName, discord, phone, email, message, over18 } = formData;
 
     if (!firstName || !lastName || !discord || !phone || !email || !over18) {
       return NextResponse.json(
@@ -33,6 +33,7 @@ export async function POST(request) {
         email,
         discord_handle: discord,
         phone_number: phone,
+        message: message || null,
         // Convert the 'yes'/'no' string to a boolean for the database
         is_over_18: over18 === "yes",
       },

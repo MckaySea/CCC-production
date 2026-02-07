@@ -40,6 +40,7 @@ import {
   FileSpreadsheet,
   Phone,
   Shield,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -82,6 +83,7 @@ interface Applicant {
   email: string;
   discord_handle: string;
   phone_number: string;
+  message?: string | null;
   is_over_18: boolean;
   created_at: string;
 }
@@ -125,11 +127,12 @@ const ErrorIndicator = ({ message }: { message: string }) => (
   </div>
 );
 
-// -------------------- APPLICANTS TAB --------------------
-function ApplicantsManagementTab() {
+// -------------------- INQUIRIES TAB --------------------
+function InquiriesManagementTab() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<Applicant | null>(null);
 
   useEffect(() => {
     const fetchApplicants = async () => {
@@ -187,7 +190,7 @@ function ApplicantsManagementTab() {
     URL.revokeObjectURL(url);
   };
 
-  if (isLoading) return <LoadingIndicator text="Loading applicants..." />;
+  if (isLoading) return <LoadingIndicator text="Loading inquiries..." />;
   if (error) return <ErrorIndicator message={error} />;
 
   return (
@@ -197,10 +200,10 @@ function ApplicantsManagementTab() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-2xl flex items-center gap-2">
-                <Users className="w-6 h-6" /> Applicant Queue
+                <Users className="w-6 h-6" /> Contact Inquiries
               </CardTitle>
               <CardDescription>
-                Review and process all incoming user applications.
+                Review all incoming contact form submissions.
               </CardDescription>
             </div>
             <Button
@@ -232,7 +235,15 @@ function ApplicantsManagementTab() {
               {applicants.map((a, index) => (
                 <TableRow key={a.id ? String(a.id) : `applicant-${index}`}>
                   <TableCell>
-                    {a.first_name} {a.last_name}
+                    <div className="flex items-center gap-2">
+                      <span>{a.first_name} {a.last_name}</span>
+                      {a.message && (
+                        <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30 text-primary">
+                          <MessageSquare className="w-3 h-3 mr-1" />
+                          Message
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{a.email}</TableCell>
                   <TableCell>{a.discord_handle}</TableCell>
@@ -246,13 +257,28 @@ function ApplicantsManagementTab() {
                     {new Date(a.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleMailTo(a.email)}
-                    >
-                      <Mail className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      {a.message && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setSelectedMessage(a)}
+                          className="cursor-pointer hover:bg-primary/10 hover:border-primary"
+                          title="View message"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleMailTo(a.email)}
+                        className="cursor-pointer"
+                        title="Send email"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -260,6 +286,69 @@ function ApplicantsManagementTab() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Message View Modal */}
+      {selectedMessage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedMessage(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-lg w-full"
+          >
+            <Card className="border-primary/30 shadow-2xl">
+              <CardHeader className="border-b border-border bg-muted/30">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  Message from {selectedMessage.first_name} {selectedMessage.last_name}
+                </CardTitle>
+                <CardDescription>
+                  Submitted on {new Date(selectedMessage.created_at).toLocaleDateString()} at{" "}
+                  {new Date(selectedMessage.created_at).toLocaleTimeString()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3 h-3" /> {selectedMessage.email}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-3 h-3" /> {selectedMessage.phone_number}
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {selectedMessage.message || "No message provided."}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedMessage(null)}
+                      className="flex-1 cursor-pointer"
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => handleMailTo(selectedMessage.email)}
+                      className="flex-1 cursor-pointer"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Reply via Email
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -1843,8 +1932,8 @@ export function AdminContent({
           setToggleRoleUserId={setToggleRoleUserId}
         />
       );
-    case "Applicants":
-      return <ApplicantsManagementTab />;
+    case "Inquiries":
+      return <InquiriesManagementTab />;
     case "Games":
       return <GameManagementTab />;
     case "Teams":
